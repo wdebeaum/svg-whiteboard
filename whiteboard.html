@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>SVG Whiteboard</title>
+<style type="text/css">
+@font-face {
+  font-family: 'Symbola';
+  src: url('Symbola/Symbola.ttf');
+}
+html, body, svg {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+.icon {
+  font-family: Symbola;
+  font-size: 16pt;
+}
+.clicked.icon {
+  stroke: white;
+}
+circle.clicked.icon {
+  fill: white;
+}
+.color {
+  stroke: white;
+  stroke-width: 2px;
+}
+.frame {
+  stroke: black;
+  stroke-width: 1px;
+}
+.unclicked.frame {
+  fill: #ddd;
+}
+.clicked.frame {
+  fill: black;
+}
+</style>
+</head>
+<body>
+<svg>
+ <defs>
+  <rect id="icon-frame" x="0" y="0" width="32" height="32">
+  <text id="move-icon" x="1px" y="2ex">
+   <tspan>←</tspan><tspan dx="-0.5em">→</tspan><tspan dx="-1em" dy="-0.5ex">↑</tspan><tspan dx="-1ex" dy="1ex">↓</tspan>
+  </text>
+  <text id="save-icon" x="4px" y="2ex">
+   <tspan>💾</tspan><tspan dx="-2.25ex" dy="-0.25ex" stroke="black" fill="#0c0">⬇</tspan><tspan dx="1.25ex" dy="0.25ex"> Save...</tspan>
+  </text>
+  <text id="open-icon" x="4px" y="2ex">
+   <tspan>💾</tspan><tspan dx="-0.75ex" dy="-0.25ex" stroke="black" fill="#0c0">⬆</tspan><tspan dy="0.25ex"> Open...</tspan>
+  </text>
+  <text id="draw-icon" x="2px" y="1.75ex" font-size="24pt">✎</text>
+  <text id="text-icon" x="4px" y="1.75ex" font-size="24pt">T</text>
+  <text id="new-icon" x="6px" y="2ex">⎚ New</text>
+  <text id="settings-icon" x="6px" y="2ex">⚙<tspan dx="0.5ex"> Settings...</tspan></text>
+  <text id="connect-icon" x="4px" y="2ex">↗</text>
+  <rect id="select-icon" x="6px" y="6px" width="20px" height="20px" fill="none" stroke="black" stroke-width="1px" stroke-dasharray="3px,2px">
+  <!-- text id="cut-icon" x="4px" y="2ex">✄</text -->
+  <text id="delete-icon" x="6px" y="1.75ex" font-size="24pt">🗑</text>
+  <text id="copy-icon" x="4px" y="1.75ex">
+   <tspan>⎕</tspan>
+   <tspan dx="-1.25ex" dy="0.5ex">❑</tspan>
+  </text>
+  <text id="zoom-in-icon" x="2px" y="2ex">
+   <tspan>🔍</tspan>
+   <tspan dx="-1ex">⁺</tspan>
+  </text>
+  <text id="zoom-out-icon" x="2px" y="2ex">
+   <tspan>🔍</tspan>
+   <tspan dx="-1ex">⁻</tspan>
+  </text>
+  <text id="menu-icon" x="4px" y="1.75ex" font-size="24pt">≡</text>
+ </defs>
+ <g transform="translate(16,16)">
+  <use xlink:href="#icon-frame" class="clicked frame"/>
+  <use xlink:href="#menu-icon" class="clicked icon"/>
+ </g>
+ <g id="menu" transform="translate(48,48)">
+  <g transform="translate(0,0)">
+   <use xlink:href="#icon-frame" class="unclicked frame"/>
+   <use xlink:href="#new-icon" class="unclicked icon"/>
+  </g>
+  <g transform="translate(0,32)">
+   <use xlink:href="#icon-frame" class="unclicked frame"/>
+   <use xlink:href="#open-icon" class="unclicked icon"/>
+  </g>
+  <g transform="translate(0,64)">
+   <use xlink:href="#icon-frame" class="unclicked frame"/>
+   <use xlink:href="#save-icon" class="unclicked icon"/>
+  </g>
+  <g transform="translate(0,96)">
+   <use xlink:href="#icon-frame" class="unclicked frame"/>
+   <use xlink:href="#settings-icon" class="unclicked icon"/>
+  </g>
+ </g>
+ <!-- left side toolbar -->
+ <g transform="translate(0,64)">
+  <use xlink:href="#icon-frame" class="unclicked frame"/>
+  <use xlink:href="#draw-icon" class="unclicked icon"/>
+ </g>
+ <g transform="translate(0,96)">
+  <use xlink:href="#icon-frame" class="unclicked frame"/>
+  <use xlink:href="#text-icon" class="unclicked icon"/>
+ </g>
+ <g transform="translate(0,128)">
+  <use xlink:href="#icon-frame" class="unclicked frame"/>
+  <use xlink:href="#connect-icon" class="unclicked icon"/>
+ </g>
+ 
+ <g transform="translate(0,192)">
+  <use xlink:href="#icon-frame" class="unclicked frame"/>
+  <use xlink:href="#select-icon" class="unclicked icon"/>
+ </g>
+ <g transform="translate(0,224)">
+  <use xlink:href="#icon-frame" class="unclicked frame"/>
+  <use xlink:href="#copy-icon" class="unclicked icon"/>
+ </g>
+ 
+ <g transform="translate(0,288)">
+  <use xlink:href="#icon-frame" class="unclicked frame"/>
+  <use xlink:href="#move-icon" class="unclicked icon"/>
+ </g>
+ <g transform="translate(0,320)">
+  <use xlink:href="#icon-frame" class="unclicked frame"/>
+  <use xlink:href="#zoom-in-icon" class="unclicked icon"/>
+ </g>
+ <g transform="translate(0,352)">
+  <use xlink:href="#icon-frame" class="unclicked frame"/>
+  <use xlink:href="#zoom-out-icon" class="unclicked icon"/>
+ </g>
+ <!-- top side properties bar -->
+ <!-- sizes -->
+ <g transform="translate(64,0)">
+  <use xlink:href="#icon-frame" class="unclicked frame"/>
+  <circle cx="16" cy="16" r="9" class="unclicked icon"/>
+ </g>
+ <g transform="translate(96,0)">
+  <use xlink:href="#icon-frame" class="unclicked frame"/>
+  <circle cx="16" cy="16" r="7" class="unclicked icon"/>
+ </g>
+ <g transform="translate(128,0)">
+  <use xlink:href="#icon-frame" class="clicked frame"/>
+  <circle cx="16" cy="16" r="5" class="clicked icon"/>
+ </g>
+ <g transform="translate(160,0)">
+  <use xlink:href="#icon-frame" class="unclicked frame"/>
+  <circle cx="16" cy="16" r="3" class="unclicked icon"/>
+ </g>
+ <g transform="translate(192,0)">
+  <use xlink:href="#icon-frame" class="unclicked frame"/>
+  <circle cx="16" cy="16" r="1" class="unclicked icon"/>
+ </g>
+ <!-- colors -->
+ <g transform="translate(256,0)">
+  <use xlink:href="#icon-frame" class="unclicked frame"/>
+  <circle cx="16" cy="16" r="10" class="unclicked color" fill="#c00"/>
+ </g>
+ <g transform="translate(288,0)">
+  <use xlink:href="#icon-frame" class="unclicked frame"/>
+  <circle cx="16" cy="16" r="10" class="unclicked color" fill="#cc0"/>
+ </g>
+ <g transform="translate(320,0)">
+  <use xlink:href="#icon-frame" class="unclicked frame"/>
+  <circle cx="16" cy="16" r="10" class="unclicked color" fill="#0c0"/>
+ </g>
+ <g transform="translate(352,0)">
+  <use xlink:href="#icon-frame" class="unclicked frame"/>
+  <circle cx="16" cy="16" r="10" class="unclicked color" fill="#0cc"/>
+ </g>
+ <g transform="translate(384,0)">
+  <use xlink:href="#icon-frame" class="clicked frame"/>
+  <circle cx="16" cy="16" r="10" class="clicked color" fill="#00c"/>
+ </g>
+ <g transform="translate(416,0)">
+  <use xlink:href="#icon-frame" class="unclicked frame"/>
+  <circle cx="16" cy="16" r="10" class="unclicked color" fill="#c0c"/>
+ </g>
+ <g transform="translate(448,0)">
+  <use xlink:href="#icon-frame" class="unclicked frame"/>
+  <circle cx="16" cy="16" r="10" class="unclicked color" fill="#000"/>
+ </g>
+
+ <g transform="translate(512,0)">
+  <use xlink:href="#icon-frame" class="unclicked frame"/>
+  <use xlink:href="#delete-icon" class="unclicked icon"/>
+ </g>
+ 
+</svg>
+</body>
+</html>
