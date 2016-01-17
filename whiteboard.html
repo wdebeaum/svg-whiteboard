@@ -39,6 +39,61 @@ circle.clicked.icon {
   fill: black;
 }
 </style>
+<script type="text/javascript">
+function show(elem) {
+  elem.style.display = '';
+}
+
+function hide(elem) {
+  elem.style.display = 'none';
+}
+
+function isHidden(elem) {
+  return (elem.style.display == 'none');
+}
+
+function toggleDisplay(elem) {
+  if (isHidden(elem)) {
+    show(elem);
+  } else {
+    hide(elem);
+  }
+}
+
+function toggleButtonClickedness(elem) {
+  // replace occurrences of "clicked" class with "unclicked" and vice versa
+  var cs = elem.childNodes;
+  for (var i = 0; i < cs.length; i++) {
+    if (!('getAttribute' in cs[i])) {
+      continue;
+    }
+    var cn = cs[i].getAttribute('class');
+    if (cn === undefined) {
+      continue;
+    }
+    cn = cn.toString();
+    if (/\bunclicked\b/.test(cn)) {
+      cn = cn.replace(/\bunclicked\b/, 'clicked');
+    } else if (/\bclicked\b/.test(cn)) {
+      cn = cn.replace(/\bclicked\b/, 'unclicked');
+    } else {
+      continue;
+    }
+    cs[i].setAttribute('class', cn);
+  }
+}
+
+window.onload = function() {
+  var menu = document.getElementById("menu");
+  hide(menu);
+  var menuButton = document.getElementById("menu-button");
+  menuButton.onclick = function() {
+    toggleButtonClickedness(menuButton);
+    toggleDisplay(menu);
+    return false;
+  };
+}
+</script>
 </head>
 <body>
 <svg>
@@ -75,11 +130,12 @@ circle.clicked.icon {
   </text>
   <text id="menu-icon" x="4px" y="1.75ex" font-size="24pt">≡</text>
  </defs>
- <g transform="translate(16,16)">
-  <use xlink:href="#icon-frame" class="clicked frame"/>
-  <use xlink:href="#menu-icon" class="clicked icon"/>
+ <g id="menu-button" transform="translate(0,0)">
+  <use xlink:href="#icon-frame" class="unclicked frame"/>
+  <use xlink:href="#menu-icon" class="unclicked icon"/>
  </g>
  <g id="menu" transform="translate(48,48)">
+  <line x1="-16" y1="-16" x2="0" y2="0" stroke="black" stroke-width="3px" />
   <g transform="translate(0,0)">
    <use xlink:href="#icon-frame" class="unclicked frame"/>
    <use xlink:href="#new-icon" class="unclicked icon"/>
