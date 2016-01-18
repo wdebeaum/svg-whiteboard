@@ -52,6 +52,11 @@ circle.clicked.icon {
 .clicked.frame {
   fill: black;
 }
+#doc path {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
 </style>
 <script type="text/javascript">
 function show(elem) {
@@ -163,11 +168,72 @@ function makeToolbarUnclicked(elem) {
   });
 }
 
+var svgNS = "http://www.w3.org/2000/svg";
+var svg = undefined;
+var doc = undefined;
 var currentTool = 'draw';
 var currentSize = 5;
 var currentColor = '#00c';
+var draggedObject = null;
+var dragging = false;
+var mouseIsOverUI = false;
+
+function getEventCoordsRelativeToDoc(e) {
+  var pageCoords = svg.createSVGPoint();
+  pageCoords.x = e.pageX;
+  pageCoords.y = e.pageY;
+  var m = doc.transform.animVal.getItem(0).matrix;
+  var docCoords = pageCoords.matrixTransform(m.inverse());
+  return docCoords;
+}
+
+function onmousedown(e) {
+  var docCoords = getEventCoordsRelativeToDoc(e);
+  if (mouseIsOverUI) {
+    // do nothing
+  } else if (currentTool == 'draw') {
+    draggedObject = document.createElementNS(svgNS, 'path');
+    draggedObject.setAttribute('d', 'M ' + docCoords.x + ' ' + docCoords.y);
+    draggedObject.setAttribute('stroke', currentColor);
+    draggedObject.setAttribute('stroke-width', currentSize * 2);
+    doc.appendChild(draggedObject);
+    return false;
+  }
+}
+
+function onmousemove(e) {
+  if (draggedObject != null) {
+    if (currentTool == 'draw' && (e.movementX != 0 || e.movementY != 0)) {
+      var d = draggedObject.getAttribute('d');
+      if (!dragging) {
+	d += ' l'; // relative lineto
+	dragging = true;
+      }
+      d += ' ' + e.movementX + ' ' + e.movementY;
+      draggedObject.setAttribute('d', d);
+      return false;
+    }
+  }
+}
+
+function onmouseup(e) {
+  if (draggedObject != null) {
+    if (currentTool == 'draw') {
+      if (!dragging) {
+	doc.removeChild(draggedObject);
+      } else {
+	// TODO simplify path by making sure each segment is at least currentSize*2 long
+      }
+      dragging = false;
+      draggedObject = null;
+      return false;
+    }
+  }
+}
 
 window.onload = function() {
+  svg = document.getElementsByTagName("svg")[0];
+  doc = document.getElementById("doc");
   var menu = document.getElementById("menu");
   hide(menu);
   var menuButton = document.getElementById("menu-button");
@@ -189,6 +255,7 @@ window.onload = function() {
       console.log("current tool is now " + currentTool);
       makeToolbarUnclicked(mainToolbar);
       makeButtonClicked(button);
+      return false;
     };
     return true;
   });
@@ -204,6 +271,7 @@ window.onload = function() {
       console.log("current size is now " + currentSize);
       makeToolbarUnclicked(sizeToolbar);
       makeButtonClicked(button);
+      return false;
     };
     return true;
   });
@@ -219,10 +287,22 @@ window.onload = function() {
       console.log("current color is now " + currentColor);
       makeToolbarUnclicked(colorToolbar);
       makeButtonClicked(button);
+      return false;
     };
     return true;
   });
   // TODO delete button
+  var uiGroup = document.getElementById("ui");
+  uiGroup.onmouseover = function() {
+    mouseIsOverUI = true;
+  }
+  uiGroup.onmouseout = function() {
+    mouseIsOverUI = false;
+  }
+
+  svg.onmousedown = onmousedown;
+  svg.onmousemove = onmousemove;
+  svg.onmouseup = onmouseup;
 }
 </script>
 </head>
@@ -261,148 +341,151 @@ window.onload = function() {
   </text>
   <text id="menu-icon" x="4px" y="1.75ex" font-size="24pt">≡</text>
  </defs>
- <g id="menu-button" transform="translate(0,0)">
-  <use xlink:href="#icon-frame" class="unclicked frame"/>
-  <use xlink:href="#menu-icon" class="unclicked icon"/>
+ <g id="doc" transform="translate(0,0)">
  </g>
- <g id="menu" transform="translate(48,48)">
-  <line x1="-16" y1="-16" x2="0" y2="0" stroke="black" stroke-width="3px" />
-  <g transform="translate(0,0)">
+ <g id="ui">
+  <g id="menu-button" transform="translate(0,0)">
    <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <use xlink:href="#new-icon" class="unclicked icon"/>
+   <use xlink:href="#menu-icon" class="unclicked icon"/>
   </g>
-  <g transform="translate(0,32)">
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <use xlink:href="#open-icon" class="unclicked icon"/>
+  <g id="menu" transform="translate(48,48)">
+   <line x1="-16" y1="-16" x2="0" y2="0" stroke="black" stroke-width="3px" />
+   <g transform="translate(0,0)">
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <use xlink:href="#new-icon" class="unclicked icon"/>
+   </g>
+   <g transform="translate(0,32)">
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <use xlink:href="#open-icon" class="unclicked icon"/>
+   </g>
+   <g transform="translate(0,64)">
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <use xlink:href="#save-icon" class="unclicked icon"/>
+   </g>
+   <g transform="translate(0,96)">
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <use xlink:href="#settings-icon" class="unclicked icon"/>
+   </g>
   </g>
-  <g transform="translate(0,64)">
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <use xlink:href="#save-icon" class="unclicked icon"/>
-  </g>
-  <g transform="translate(0,96)">
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <use xlink:href="#settings-icon" class="unclicked icon"/>
-  </g>
- </g>
- <!-- left side toolbar -->
- <g id="main-toolbar">
-  <g transform="translate(0,64)">
-   <title>draw freehand lines</title>
-   <use xlink:href="#icon-frame" class="clicked frame"/>
-   <use xlink:href="#draw-icon" class="clicked icon"/>
-  </g>
-  <g transform="translate(0,96)">
-   <title>add text</title>
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <use xlink:href="#text-icon" class="unclicked icon"/>
-  </g>
-  <g transform="translate(0,128)">
-   <title>connect objects with arrows</title>
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <use xlink:href="#connect-icon" class="unclicked icon"/>
-  </g>
-  
-  <g transform="translate(0,192)">
-   <title>select groups of objects and then move them, change their properties, or delete them</title>
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <use xlink:href="#select-icon" class="unclicked icon" id="select-icon-use" />
-  </g>
-  <g transform="translate(0,224)">
-   <title>copy objects or selected groups of objects</title>
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <use xlink:href="#copy-icon" class="unclicked icon"/>
-  </g>
-  
-  <g transform="translate(0,288)">
-   <title>pan</title>
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <use xlink:href="#move-icon" class="unclicked icon"/>
-  </g>
-  <g transform="translate(0,320)">
-   <title>zoom in</title>
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <use xlink:href="#zoom-in-icon" class="unclicked icon"/>
-  </g>
-  <g transform="translate(0,352)">
-   <title>zoom out</title>
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <use xlink:href="#zoom-out-icon" class="unclicked icon"/>
-  </g>
- </g>
- <!-- top side properties bar -->
- <!-- sizes -->
- <g id="size-toolbar">
-  <g transform="translate(64,0)">
-   <title>set pen width</title>
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <circle cx="16" cy="16" r="9" class="unclicked icon"/>
-  </g>
-  <g transform="translate(96,0)">
-   <title>set pen width</title>
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <circle cx="16" cy="16" r="7" class="unclicked icon"/>
-  </g>
-  <g transform="translate(128,0)">
-   <title>set pen width</title>
-   <use xlink:href="#icon-frame" class="clicked frame"/>
-   <circle cx="16" cy="16" r="5" class="clicked icon"/>
-  </g>
-  <g transform="translate(160,0)">
-   <title>set pen width</title>
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <circle cx="16" cy="16" r="3" class="unclicked icon"/>
-  </g>
-  <g transform="translate(192,0)">
-   <title>set pen width</title>
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <circle cx="16" cy="16" r="1" class="unclicked icon"/>
-  </g>
- </g>
- <!-- colors -->
- <g id="color-toolbar">
-  <g transform="translate(256,0)">
-   <title>set pen color</title>
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <circle cx="16" cy="16" r="10" class="unclicked color" fill="#c00"/>
-  </g>
-  <g transform="translate(288,0)">
-   <title>set pen color</title>
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <circle cx="16" cy="16" r="10" class="unclicked color" fill="#cc0"/>
-  </g>
-  <g transform="translate(320,0)">
-   <title>set pen color</title>
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <circle cx="16" cy="16" r="10" class="unclicked color" fill="#0c0"/>
-  </g>
-  <g transform="translate(352,0)">
-   <title>set pen color</title>
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <circle cx="16" cy="16" r="10" class="unclicked color" fill="#0cc"/>
-  </g>
-  <g transform="translate(384,0)">
-   <title>set pen color</title>
-   <use xlink:href="#icon-frame" class="clicked frame"/>
-   <circle cx="16" cy="16" r="10" class="clicked color" fill="#00c"/>
-  </g>
-  <g transform="translate(416,0)">
-   <title>set pen color</title>
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <circle cx="16" cy="16" r="10" class="unclicked color" fill="#c0c"/>
-  </g>
-  <g transform="translate(448,0)">
-   <title>set pen color</title>
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <circle cx="16" cy="16" r="10" class="unclicked color" fill="#000"/>
-  </g>
- </g>
+  <!-- left side toolbar -->
+  <g id="main-toolbar">
+   <g transform="translate(0,64)">
+    <title>draw freehand lines</title>
+    <use xlink:href="#icon-frame" class="clicked frame"/>
+    <use xlink:href="#draw-icon" class="clicked icon"/>
+   </g>
+   <g transform="translate(0,96)">
+    <title>add text</title>
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <use xlink:href="#text-icon" class="unclicked icon"/>
+   </g>
+   <g transform="translate(0,128)">
+    <title>connect objects with arrows</title>
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <use xlink:href="#connect-icon" class="unclicked icon"/>
+   </g>
 
- <g transform="translate(512,0)">
-  <title>delete selected group of objects</title>
-  <use xlink:href="#icon-frame" class="unclicked frame"/>
-  <use xlink:href="#delete-icon" class="unclicked icon"/>
+   <g transform="translate(0,192)">
+    <title>select groups of objects and then move them, change their properties, or delete them</title>
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <use xlink:href="#select-icon" class="unclicked icon" id="select-icon-use" />
+   </g>
+   <g transform="translate(0,224)">
+    <title>copy objects or selected groups of objects</title>
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <use xlink:href="#copy-icon" class="unclicked icon"/>
+   </g>
+
+   <g transform="translate(0,288)">
+    <title>pan</title>
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <use xlink:href="#move-icon" class="unclicked icon"/>
+   </g>
+   <g transform="translate(0,320)">
+    <title>zoom in</title>
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <use xlink:href="#zoom-in-icon" class="unclicked icon"/>
+   </g>
+   <g transform="translate(0,352)">
+    <title>zoom out</title>
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <use xlink:href="#zoom-out-icon" class="unclicked icon"/>
+   </g>
+  </g>
+  <!-- top side properties bar -->
+  <!-- sizes -->
+  <g id="size-toolbar">
+   <g transform="translate(64,0)">
+    <title>set pen width</title>
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <circle cx="16" cy="16" r="9" class="unclicked icon"/>
+   </g>
+   <g transform="translate(96,0)">
+    <title>set pen width</title>
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <circle cx="16" cy="16" r="7" class="unclicked icon"/>
+   </g>
+   <g transform="translate(128,0)">
+    <title>set pen width</title>
+    <use xlink:href="#icon-frame" class="clicked frame"/>
+    <circle cx="16" cy="16" r="5" class="clicked icon"/>
+   </g>
+   <g transform="translate(160,0)">
+    <title>set pen width</title>
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <circle cx="16" cy="16" r="3" class="unclicked icon"/>
+   </g>
+   <g transform="translate(192,0)">
+    <title>set pen width</title>
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <circle cx="16" cy="16" r="1" class="unclicked icon"/>
+   </g>
+  </g>
+  <!-- colors -->
+  <g id="color-toolbar">
+   <g transform="translate(256,0)">
+    <title>set pen color</title>
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#c00"/>
+   </g>
+   <g transform="translate(288,0)">
+    <title>set pen color</title>
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#cc0"/>
+   </g>
+   <g transform="translate(320,0)">
+    <title>set pen color</title>
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#0c0"/>
+   </g>
+   <g transform="translate(352,0)">
+    <title>set pen color</title>
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#0cc"/>
+   </g>
+   <g transform="translate(384,0)">
+    <title>set pen color</title>
+    <use xlink:href="#icon-frame" class="clicked frame"/>
+    <circle cx="16" cy="16" r="10" class="clicked color" fill="#00c"/>
+   </g>
+   <g transform="translate(416,0)">
+    <title>set pen color</title>
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#c0c"/>
+   </g>
+   <g transform="translate(448,0)">
+    <title>set pen color</title>
+    <use xlink:href="#icon-frame" class="unclicked frame"/>
+    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#000"/>
+   </g>
+  </g>
+
+  <g transform="translate(512,0)">
+   <title>delete selected group of objects</title>
+   <use xlink:href="#icon-frame" class="unclicked frame"/>
+   <use xlink:href="#delete-icon" class="unclicked icon"/>
+  </g>
  </g>
- 
 </svg>
 </body>
 </html>
