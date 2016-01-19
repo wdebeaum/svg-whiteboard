@@ -201,15 +201,32 @@ function onmousedown(e) {
   }
 }
 
+function prefixProperty(pre, prop) {
+  return pre + prop.replace(/^[a-z]/, function(l) { return l.toUpperCase(); });
+}
+
+function tryPrefixes(obj, prop) {
+  if (prop in obj) {
+    return obj[prop];
+  } else if (prefixProperty('moz', prop) in obj) {
+    return obj[prefixProperty('moz', prop)];
+  } else if (prefixProperty('webkit', prop) in obj) {
+    return obj[prefixProperty('webkit', prop)];
+  } else {
+    return undefined;
+  }
+}
+
 function onmousemove(e) {
   if (draggedObject != null) {
-    if (currentTool == 'draw' && (e.movementX != 0 || e.movementY != 0)) {
+    var m = { x: tryPrefixes(e, 'movementX'), y: tryPrefixes(e, 'movementY') };
+    if (currentTool == 'draw' && (m.x != 0 || m.y != 0)) {
       var d = draggedObject.getAttribute('d');
       if (!dragging) {
 	d += ' l'; // relative lineto
 	dragging = true;
       }
-      d += ' ' + e.movementX + ' ' + e.movementY;
+      d += ' ' + m.x + ' ' + m.y;
       draggedObject.setAttribute('d', d);
       return false;
     }
