@@ -175,6 +175,7 @@ var currentTool = 'draw';
 var currentSize = 5;
 var currentColor = '#00c';
 var draggedObject = null;
+var deferredMovement = null;
 var dragging = false;
 var mouseIsOverUI = false;
 
@@ -197,6 +198,7 @@ function onmousedown(e) {
     draggedObject.setAttribute('stroke', currentColor);
     draggedObject.setAttribute('stroke-width', currentSize * 2);
     doc.appendChild(draggedObject);
+    deferredMovement = { x: 0, y: 0 };
     return false;
   }
 }
@@ -218,15 +220,26 @@ function tryPrefixes(obj, prop) {
 }
 
 function onmousemove(e) {
-  if (draggedObject != null) {
-    var m = { x: tryPrefixes(e, 'movementX'), y: tryPrefixes(e, 'movementY') };
-    if (currentTool == 'draw' && (m.x != 0 || m.y != 0)) {
+  if (draggedObject != null && deferredMovement != null) {
+    var currentMovement = {
+      x: tryPrefixes(e, 'movementX'),
+      y: tryPrefixes(e, 'movementY')
+    };
+    deferredMovement = {
+      x: deferredMovement.x + currentMovement.x,
+      y: deferredMovement.y + currentMovement.y
+    };
+    if (currentTool == 'draw' && (
+         Math.abs(deferredMovement.x) > currentSize ||
+	 Math.abs(deferredMovement.y) > currentSize
+       )) {
       var d = draggedObject.getAttribute('d');
       if (!dragging) {
 	d += ' l'; // relative lineto
 	dragging = true;
       }
-      d += ' ' + m.x + ' ' + m.y;
+      d += ' ' + deferredMovement.x + ' ' + deferredMovement.y;
+      deferredMovement = { x: 0, y: 0 };
       draggedObject.setAttribute('d', d);
       return false;
     }
@@ -238,11 +251,15 @@ function onmouseup(e) {
     if (currentTool == 'draw') {
       if (!dragging) {
 	doc.removeChild(draggedObject);
-      } else {
-	// TODO simplify path by making sure each segment is at least currentSize*2 long
+      } else if (deferredMovement.x != 0 || deferredMovement.y != 0) {
+	// do the last little bit of deferred movement
+	var d = draggedObject.getAttribute('d');
+	d += ' l ' + deferredMovement.x + ' ' + deferredMovement.y;
+	draggedObject.setAttribute('d', d);
       }
       dragging = false;
       draggedObject = null;
+      deferredMovement = null;
       return false;
     }
   }
