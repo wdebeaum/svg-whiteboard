@@ -52,10 +52,13 @@ circle.clicked.icon {
 .clicked.frame {
   fill: black;
 }
-#doc path {
+#doc-and-selection path {
   fill: none;
   stroke-linejoin: round;
   stroke-linecap: round;
+}
+#selection {
+  filter: url('#shadow');
 }
 </style>
 <script type="text/javascript">
@@ -170,7 +173,9 @@ function makeToolbarUnclicked(elem) {
 
 var svgNS = "http://www.w3.org/2000/svg";
 var svg = undefined;
+var docAndSelection = undefined;
 var doc = undefined;
+var selection = undefined;
 var currentTool = 'draw';
 var currentSize = 5;
 var currentColor = '#00c';
@@ -183,7 +188,7 @@ function getEventCoordsRelativeToDoc(e) {
   var pageCoords = svg.createSVGPoint();
   pageCoords.x = e.pageX;
   pageCoords.y = e.pageY;
-  var m = doc.transform.animVal.getItem(0).matrix;
+  var m = docAndSelection.transform.animVal.getItem(0).matrix;
   var docCoords = pageCoords.matrixTransform(m.inverse());
   return docCoords;
 }
@@ -197,7 +202,7 @@ function onmousedown(e) {
     draggedObject.setAttribute('d', 'M ' + docCoords.x + ' ' + docCoords.y);
     draggedObject.setAttribute('stroke', currentColor);
     draggedObject.setAttribute('stroke-width', currentSize * 2);
-    doc.appendChild(draggedObject);
+    selection.appendChild(draggedObject);
     deferredMovement = { x: 0, y: 0 };
     return false;
   }
@@ -249,13 +254,15 @@ function onmousemove(e) {
 function onmouseup(e) {
   if (draggedObject != null) {
     if (currentTool == 'draw') {
-      if (!dragging) {
-	doc.removeChild(draggedObject);
-      } else if (deferredMovement.x != 0 || deferredMovement.y != 0) {
-	// do the last little bit of deferred movement
-	var d = draggedObject.getAttribute('d');
-	d += ' l ' + deferredMovement.x + ' ' + deferredMovement.y;
-	draggedObject.setAttribute('d', d);
+      selection.removeChild(draggedObject);
+      if (dragging) {
+	doc.appendChild(draggedObject);
+	if (deferredMovement.x != 0 || deferredMovement.y != 0) {
+	  // do the last little bit of deferred movement
+	  var d = draggedObject.getAttribute('d');
+	  d += ' l ' + deferredMovement.x + ' ' + deferredMovement.y;
+	  draggedObject.setAttribute('d', d);
+	}
       }
       dragging = false;
       draggedObject = null;
@@ -267,7 +274,9 @@ function onmouseup(e) {
 
 window.onload = function() {
   svg = document.getElementsByTagName("svg")[0];
+  docAndSelection = document.getElementById("doc-and-selection");
   doc = document.getElementById("doc");
+  selection = document.getElementById("selection");
   var menu = document.getElementById("menu");
   hide(menu);
   var menuButton = document.getElementById("menu-button");
@@ -343,6 +352,11 @@ window.onload = function() {
 <body>
 <svg>
  <defs>
+  <filter id="shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">
+   <feOffset result="offset" in="SourceAlpha" dx="2" dy="2" />
+   <feGaussianBlur result="blur" in="offset" stdDeviation="3" />
+   <feBlend in="SourceGraphic" in2="blur" mode="normal" />
+  </filter>
   <rect id="icon-frame" x="0" y="0" width="32" height="32">
   <text id="move-icon" x="1px" y="2ex">
    <tspan>←</tspan><tspan dx="-0.5em">→</tspan><tspan dx="-1em" dy="-0.5ex">↑</tspan><tspan dx="-1ex" dy="1ex">↓</tspan>
@@ -375,7 +389,11 @@ window.onload = function() {
   </text>
   <text id="menu-icon" x="4px" y="1.75ex" font-size="24pt">≡</text>
  </defs>
- <g id="doc" transform="translate(0,0)">
+ <g id="doc-and-selection" transform="translate(0,0)">
+  <g id="doc">
+  </g>
+  <g id="selection">
+  </g>
  </g>
  <g id="ui">
   <g id="menu-button" transform="translate(0,0)">
