@@ -171,6 +171,28 @@ function makeToolbarUnclicked(elem) {
   });
 }
 
+// given the ID of an icon, return a CSS cursor declaration using the icon
+function iconToCursor(iconId) {
+  // It would be nice if this were just "cursor: url(#" + iconID + ");", but
+  // that's not the world we live in :-P
+  var iconSVG =
+    '<?xml version="1.0"?>' +
+    '<svg xmlns="http://www.w3.org/2000/svg" width="32px" height="32px">' +
+    // ... but it also means we have an opportunity to put filter effects on
+    // the icon like this
+    '<defs><filter id="outline" filterUnits="userSpaceOnUse" x="-10%" y="-10%" width="120%" height="120%">' +
+    '<feMorphology result="dilation" in="SourceAlpha" operator="dilate" radius="1" />' +
+    '<feColorMatrix result="whiteDilation" in="dilation" type="matrix" values="-1 0 0 0 1  0 -1 0 0 1  0 0 -1 0 1  0 0 0 1 0" />' +
+    '<feBlend in="SourceGraphic" in2="whiteDilation" mode="normal" />' +
+    '</filter></defs><g style="filter: url(#outline);">' +
+    document.getElementById(iconId).outerHTML +
+    '</g>' +
+    '</svg>';
+  // FIXME: also need to get font so that icons render correctly
+  // FIXME 2: the "hot spot" is different for each icon, how to store?
+  return "cursor: url('data:image/svg+xml," + encodeURIComponent(iconSVG) + "') 16 16, auto;";
+}
+
 var svgNS = "http://www.w3.org/2000/svg";
 var svg = undefined;
 var docAndSelection = undefined;
@@ -289,12 +311,15 @@ window.onload = function() {
   forEachToolbarButton(mainToolbar, function(button) {
     var iconUse = button.childNodes[button.childNodes.length - 2];
     var href = iconUse.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
-    var toolName = href.toString().replace(/^#/,'').replace(/-icon$/,'');
+    var iconName = href.toString().replace(/^#/,'');
+    var toolName = iconName.replace(/-icon$/,'');
     if (isButtonClicked(button)) {
       currentTool = toolName;
+      svg.setAttribute('style', iconToCursor(iconName));
     }
     button.onclick = function() {
       currentTool = toolName;
+      svg.setAttribute('style', iconToCursor(iconName));
       console.log("current tool is now " + currentTool);
       makeToolbarUnclicked(mainToolbar);
       makeButtonClicked(button);
