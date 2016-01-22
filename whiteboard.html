@@ -58,7 +58,8 @@ circle.clicked.icon {
   stroke-linecap: round;
 }
 #selection {
-  filter: url('#shadow');
+/* FIXME see comment in the filter element this references
+  filter: url('#shadow'); */
 }
 </style>
 <script type="text/javascript">
@@ -227,6 +228,9 @@ function onmousedown(e) {
     selection.appendChild(draggedObject);
     deferredMovement = { x: 0, y: 0 };
     return false;
+  } else if (currentTool == 'move') {
+    draggedObject = docAndSelection.transform.baseVal.getItem(0);
+    return false;
   }
 }
 
@@ -247,28 +251,35 @@ function tryPrefixes(obj, prop) {
 }
 
 function onmousemove(e) {
-  if (draggedObject != null && deferredMovement != null) {
+  if (draggedObject != null) {
     var currentMovement = {
       x: tryPrefixes(e, 'movementX'),
       y: tryPrefixes(e, 'movementY')
     };
-    deferredMovement = {
-      x: deferredMovement.x + currentMovement.x,
-      y: deferredMovement.y + currentMovement.y
-    };
-    if (currentTool == 'draw' && (
-         Math.abs(deferredMovement.x) > currentSize ||
-	 Math.abs(deferredMovement.y) > currentSize
-       )) {
-      var d = draggedObject.getAttribute('d');
-      if (!dragging) {
-	d += ' l'; // relative lineto
-	dragging = true;
+    if (currentTool == 'draw') {
+      deferredMovement = {
+	x: deferredMovement.x + currentMovement.x,
+	y: deferredMovement.y + currentMovement.y
+      };
+      if ( Math.abs(deferredMovement.x) > currentSize ||
+	   Math.abs(deferredMovement.y) > currentSize
+	 ) {
+	var d = draggedObject.getAttribute('d');
+	if (!dragging) {
+	  d += ' l'; // relative lineto
+	  dragging = true;
+	}
+	d += ' ' + deferredMovement.x + ' ' + deferredMovement.y;
+	deferredMovement = { x: 0, y: 0 };
+	draggedObject.setAttribute('d', d);
+	return false;
       }
-      d += ' ' + deferredMovement.x + ' ' + deferredMovement.y;
-      deferredMovement = { x: 0, y: 0 };
-      draggedObject.setAttribute('d', d);
-      return false;
+    } else if (currentTool == 'move') {
+      var newTranslate = {
+	x: draggedObject.matrix.e + currentMovement.x,
+	y: draggedObject.matrix.f + currentMovement.y
+      };
+      draggedObject.setTranslate(newTranslate.x, newTranslate.y);
     }
   }
 }
@@ -290,7 +301,21 @@ function onmouseup(e) {
       draggedObject = null;
       deferredMovement = null;
       return false;
+    } else if (currentTool == 'move') {
+      draggedObject = null;
+      return false;
     }
+  }
+  if (currentTool == 'zoom-in') {
+    // TODO also translate in order to keep the clicked location where it is
+    var transform = docAndSelection.transform.baseVal.getItem(1);
+    var newScale = transform.matrix.a * 2;
+    transform.setScale(newScale, newScale);
+  } else if (currentTool == 'zoom-out') {
+    // TODO see above
+    var transform = docAndSelection.transform.baseVal.getItem(1);
+    var newScale = transform.matrix.a / 2;
+    transform.setScale(newScale, newScale);
   }
 }
 
@@ -377,7 +402,10 @@ window.onload = function() {
 <body>
 <svg>
  <defs>
-  <filter id="shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">
+  <filter id="shadow"
+   <!-- FIXME: if I use userSpaceOnUse here, selections don't show up outside the original un-panned view area. If I use objectBoundingBox, the width of the stroke doesn't count towards the bounding box and thus gets cut off at the ends, and along the length in the case of near-horizontal or near-vertical lines -->
+   filterUnits="userSpaceOnUse"
+   x="0" y="0" width="100%" height="100%">
    <feOffset result="offset" in="SourceAlpha" dx="2" dy="2" />
    <feGaussianBlur result="blur" in="offset" stdDeviation="3" />
    <feBlend in="SourceGraphic" in2="blur" mode="normal" />
@@ -414,7 +442,7 @@ window.onload = function() {
   </text>
   <text id="menu-icon" x="4px" y="1.75ex" font-size="24pt">≡</text>
  </defs>
- <g id="doc-and-selection" transform="translate(0,0)">
+ <g id="doc-and-selection" transform="translate(0,0) scale(1)">
   <g id="doc">
   </g>
   <g id="selection">
