@@ -211,6 +211,7 @@ function getEventCoordsRelativeToDoc(e) {
   var pageCoords = svg.createSVGPoint();
   pageCoords.x = e.pageX;
   pageCoords.y = e.pageY;
+  console.log(JSON.stringify({ pageCoords: { x: pageCoords.x, y: pageCoords.y } }));
   var transforms = docAndSelection.transform.animVal;
   var m = transforms.getItem(1).matrix.inverse().multiply(
           transforms.getItem(0).matrix.inverse());
@@ -313,22 +314,30 @@ function onmouseup(e) {
 }
 
 function onclick(e) {
+  var docCoords = getEventCoordsRelativeToDoc(e);
   if (mouseIsOverUI) {
     // do nothing
-  } else if (currentTool == 'zoom-in') {
+  } else if (/^zoom-/.test(currentTool)) {
     e.stopPropagation();
-    console.log('zooming in');
-    // TODO also translate in order to keep the clicked location where it is
-    var transform = docAndSelection.transform.baseVal.getItem(1);
-    var newScale = transform.matrix.a * 2;
-    transform.setScale(newScale, newScale);
-  } else if (currentTool == 'zoom-out') {
-    e.stopPropagation();
-    console.log('zooming out');
-    // TODO see above
-    var transform = docAndSelection.transform.baseVal.getItem(1);
-    var newScale = transform.matrix.a / 2;
-    transform.setScale(newScale, newScale);
+    var transform = docAndSelection.transform.baseVal;
+    var translate = transform.getItem(0);
+    var scale = transform.getItem(1);
+    var scaleVal = scale.matrix.a;
+    if (currentTool == 'zoom-in') {
+      var newTranslate = {
+	x: translate.matrix.e - docCoords.x * scaleVal,
+	y: translate.matrix.f - docCoords.y * scaleVal
+      };
+      var newScale = scaleVal * 2;
+    } else { // zoom-out
+      var newScale = scaleVal / 2;
+      var newTranslate = {
+	x: translate.matrix.e + docCoords.x * newScale,
+	y: translate.matrix.f + docCoords.y * newScale
+      };
+    }
+    translate.setTranslate(newTranslate.x, newTranslate.y);
+    scale.setScale(newScale, newScale);
   }
 }
 
