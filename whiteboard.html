@@ -211,8 +211,10 @@ function getEventCoordsRelativeToDoc(e) {
   var pageCoords = svg.createSVGPoint();
   pageCoords.x = e.pageX;
   pageCoords.y = e.pageY;
-  var m = docAndSelection.transform.animVal.getItem(0).matrix;
-  var docCoords = pageCoords.matrixTransform(m.inverse());
+  var transforms = docAndSelection.transform.animVal;
+  var m = transforms.getItem(1).matrix.inverse().multiply(
+          transforms.getItem(0).matrix.inverse());
+  var docCoords = pageCoords.matrixTransform(m);
   return docCoords;
 }
 
@@ -255,11 +257,12 @@ function tryPrefixes(obj, prop) {
 function onmousemove(e) {
   if (draggedObject != null) {
     e.stopPropagation();
-    var currentMovement = {
-      x: tryPrefixes(e, 'movementX'),
-      y: tryPrefixes(e, 'movementY')
-    };
+    var currentMovement = svg.createSVGPoint();
+    currentMovement.x = tryPrefixes(e, 'movementX');
+    currentMovement.y = tryPrefixes(e, 'movementY');
     if (currentTool == 'draw') {
+      var zoomMatrix = docAndSelection.transform.animVal.getItem(1).matrix;
+      currentMovement = currentMovement.matrixTransform(zoomMatrix.inverse());
       deferredMovement = {
 	x: deferredMovement.x + currentMovement.x,
 	y: deferredMovement.y + currentMovement.y
