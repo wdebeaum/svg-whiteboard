@@ -211,7 +211,6 @@ function getEventCoordsRelativeToDoc(e) {
   var pageCoords = svg.createSVGPoint();
   pageCoords.x = e.pageX;
   pageCoords.y = e.pageY;
-  console.log(JSON.stringify({ pageCoords: { x: pageCoords.x, y: pageCoords.y } }));
   var transforms = docAndSelection.transform.animVal;
   var m = transforms.getItem(1).matrix.inverse().multiply(
           transforms.getItem(0).matrix.inverse());
