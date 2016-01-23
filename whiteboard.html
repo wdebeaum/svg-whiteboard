@@ -221,16 +221,16 @@ function onmousedown(e) {
   if (mouseIsOverUI) {
     // do nothing
   } else if (currentTool == 'draw') {
+    e.stopPropagation();
     draggedObject = document.createElementNS(svgNS, 'path');
     draggedObject.setAttribute('d', 'M ' + docCoords.x + ' ' + docCoords.y);
     draggedObject.setAttribute('stroke', currentColor);
     draggedObject.setAttribute('stroke-width', currentSize * 2);
     selection.appendChild(draggedObject);
     deferredMovement = { x: 0, y: 0 };
-    return false;
   } else if (currentTool == 'move') {
+    e.stopPropagation();
     draggedObject = docAndSelection.transform.baseVal.getItem(0);
-    return false;
   }
 }
 
@@ -250,8 +250,11 @@ function tryPrefixes(obj, prop) {
   }
 }
 
+// TODO consider having separate onmousemove functions for each tool, and only
+// enabling them while the mouse button is down, to be more efficient
 function onmousemove(e) {
   if (draggedObject != null) {
+    e.stopPropagation();
     var currentMovement = {
       x: tryPrefixes(e, 'movementX'),
       y: tryPrefixes(e, 'movementY')
@@ -272,7 +275,6 @@ function onmousemove(e) {
 	d += ' ' + deferredMovement.x + ' ' + deferredMovement.y;
 	deferredMovement = { x: 0, y: 0 };
 	draggedObject.setAttribute('d', d);
-	return false;
       }
     } else if (currentTool == 'move') {
       var newTranslate = {
@@ -286,6 +288,7 @@ function onmousemove(e) {
 
 function onmouseup(e) {
   if (draggedObject != null) {
+    e.stopPropagation();
     if (currentTool == 'draw') {
       selection.removeChild(draggedObject);
       if (dragging) {
@@ -300,18 +303,25 @@ function onmouseup(e) {
       dragging = false;
       draggedObject = null;
       deferredMovement = null;
-      return false;
     } else if (currentTool == 'move') {
       draggedObject = null;
-      return false;
     }
   }
-  if (currentTool == 'zoom-in') {
+}
+
+function onclick(e) {
+  if (mouseIsOverUI) {
+    // do nothing
+  } else if (currentTool == 'zoom-in') {
+    e.stopPropagation();
+    console.log('zooming in');
     // TODO also translate in order to keep the clicked location where it is
     var transform = docAndSelection.transform.baseVal.getItem(1);
     var newScale = transform.matrix.a * 2;
     transform.setScale(newScale, newScale);
   } else if (currentTool == 'zoom-out') {
+    e.stopPropagation();
+    console.log('zooming out');
     // TODO see above
     var transform = docAndSelection.transform.baseVal.getItem(1);
     var newScale = transform.matrix.a / 2;
@@ -328,9 +338,9 @@ window.onload = function() {
   hide(menu);
   var menuButton = document.getElementById("menu-button");
   menuButton.onclick = function() {
+    e.stopPropagation();
     toggleButtonClickedness(menuButton);
     toggleDisplay(menu);
-    return false;
   };
   var mainToolbar = document.getElementById("main-toolbar");
   forEachToolbarButton(mainToolbar, function(button) {
@@ -342,13 +352,13 @@ window.onload = function() {
       currentTool = toolName;
       svg.setAttribute('style', iconToCursor(iconName));
     }
-    button.onclick = function() {
+    button.onclick = function(e) {
+      e.stopPropagation();
       currentTool = toolName;
       svg.setAttribute('style', iconToCursor(iconName));
       console.log("current tool is now " + currentTool);
       makeToolbarUnclicked(mainToolbar);
       makeButtonClicked(button);
-      return false;
     };
     return true;
   });
@@ -359,12 +369,12 @@ window.onload = function() {
     if (isButtonClicked(button)) {
       currentSize = size;
     }
-    button.onclick = function() {
+    button.onclick = function(e) {
+      e.stopPropagation();
       currentSize = size;
       console.log("current size is now " + currentSize);
       makeToolbarUnclicked(sizeToolbar);
       makeButtonClicked(button);
-      return false;
     };
     return true;
   });
@@ -375,12 +385,12 @@ window.onload = function() {
     if (isButtonClicked(button)) {
       currentColor = color;
     }
-    button.onclick = function() {
+    button.onclick = function(e) {
+      e.stopPropagation();
       currentColor = color;
       console.log("current color is now " + currentColor);
       makeToolbarUnclicked(colorToolbar);
       makeButtonClicked(button);
-      return false;
     };
     return true;
   });
@@ -396,6 +406,7 @@ window.onload = function() {
   svg.onmousedown = onmousedown;
   svg.onmousemove = onmousemove;
   svg.onmouseup = onmouseup;
+  svg.onclick = onclick;
 }
 </script>
 </head>
