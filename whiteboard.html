@@ -57,9 +57,8 @@ circle.clicked.icon {
   stroke-linejoin: round;
   stroke-linecap: round;
 }
-#selection {
-/* FIXME see comment in the filter element this references
-  filter: url('#shadow'); */
+#selection-filter {
+  filter: url('#shadow');
 }
 </style>
 <script type="text/javascript">
@@ -211,11 +210,15 @@ function getEventCoordsRelativeToDoc(e) {
   var pageCoords = svg.createSVGPoint();
   pageCoords.x = e.pageX;
   pageCoords.y = e.pageY;
-  var transforms = docAndSelection.transform.animVal;
+  var transforms = doc.transform.animVal;
   var m = transforms.getItem(1).matrix.inverse().multiply(
           transforms.getItem(0).matrix.inverse());
   var docCoords = pageCoords.matrixTransform(m);
   return docCoords;
+}
+
+function copyDocTransformToSelection() {
+  selection.setAttribute("transform", doc.getAttribute("transform"));
 }
 
 function onmousedown(e) {
@@ -232,7 +235,7 @@ function onmousedown(e) {
     deferredMovement = { x: 0, y: 0 };
   } else if (currentTool == 'move') {
     e.stopPropagation();
-    draggedObject = docAndSelection.transform.baseVal.getItem(0);
+    draggedObject = doc.transform.baseVal.getItem(0);
   }
 }
 
@@ -261,7 +264,7 @@ function onmousemove(e) {
     currentMovement.x = tryPrefixes(e, 'movementX');
     currentMovement.y = tryPrefixes(e, 'movementY');
     if (currentTool == 'draw') {
-      var zoomMatrix = docAndSelection.transform.animVal.getItem(1).matrix;
+      var zoomMatrix = doc.transform.animVal.getItem(1).matrix;
       currentMovement = currentMovement.matrixTransform(zoomMatrix.inverse());
       deferredMovement = {
 	x: deferredMovement.x + currentMovement.x,
@@ -286,6 +289,8 @@ function onmousemove(e) {
       };
       draggedObject.setTranslate(newTranslate.x, newTranslate.y);
     }
+    // make sure doc and selection are in sync
+    copyDocTransformToSelection();
   }
 }
 
@@ -318,7 +323,7 @@ function onclick(e) {
     // do nothing
   } else if (/^zoom-/.test(currentTool)) {
     e.stopPropagation();
-    var transform = docAndSelection.transform.baseVal;
+    var transform = doc.transform.baseVal;
     var translate = transform.getItem(0);
     var scale = transform.getItem(1);
     var scaleVal = scale.matrix.a;
@@ -337,6 +342,7 @@ function onclick(e) {
     }
     translate.setTranslate(newTranslate.x, newTranslate.y);
     scale.setScale(newScale, newScale);
+    copyDocTransformToSelection();
   }
 }
 
@@ -425,7 +431,6 @@ window.onload = function() {
 <svg>
  <defs>
   <filter id="shadow"
-   <!-- FIXME: if I use userSpaceOnUse here, selections don't show up outside the original un-panned view area. If I use objectBoundingBox, the width of the stroke doesn't count towards the bounding box and thus gets cut off at the ends, and along the length in the case of near-horizontal or near-vertical lines -->
    filterUnits="userSpaceOnUse"
    x="0" y="0" width="100%" height="100%">
    <feOffset result="offset" in="SourceAlpha" dx="2" dy="2" />
@@ -464,10 +469,12 @@ window.onload = function() {
   </text>
   <text id="menu-icon" x="4px" y="1.75ex" font-size="24pt">≡</text>
  </defs>
- <g id="doc-and-selection" transform="translate(0,0) scale(1)">
-  <g id="doc">
+ <g id="doc-and-selection">
+  <g id="doc" transform="translate(0,0) scale(1 1)">
   </g>
-  <g id="selection">
+  <g id="selection-filter">
+   <g id="selection" transform="translate(0,0) scale(1 1)">
+   </g>
   </g>
  </g>
  <g id="ui">
