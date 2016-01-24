@@ -38,6 +38,12 @@ circle.clicked.icon {
 #select-icon-use.clicked.icon {
   stroke: white;
 }
+#select-rect {
+  fill: none;
+  stroke: black;
+  stroke-width: 1px;
+  stroke-dasharray: 3px,2px;
+}
 .color {
   stroke: white;
   stroke-width: 2px;
@@ -188,6 +194,7 @@ var svg = undefined;
 var docAndSelection = undefined;
 var doc = undefined;
 var selection = undefined;
+var selectRect = undefined;
 var iconStyle = undefined;
 var textToolInput = undefined;
 var currentTool = 'draw';
@@ -197,6 +204,45 @@ var draggedObject = null;
 var deferredMovement = null;
 var dragging = false;
 var mouseIsOverUI = false;
+
+/* like svg.checkEnclosure, but:
+ *  - only check against the bounding box
+ *  - assume no rotations or negative scales have been applied
+ * (also Firefox doesn't have checkEnclosure yet)
+ */
+function checkBBEnclosure(element, rect) {
+  var localBB = element.getBBox();
+  var localTL = svg.createSVGPoint();
+  localTL.x = localBB.x;
+  localTL.y = localBB.y;
+  var localBR = svg.createSVGPoint();
+  localBR.x = localBB.x + localBB.width;
+  localBR.y = localBB.y + localBB.height;
+  var m = element.getCTM();
+  var viewTL = localTL.matrixTransform(m);
+  var viewBR = localBR.matrixTransform(m);
+  var rectBR = { x: rect.x + rect.width, y: rect.y + rect.height };
+  return (rect.x <= viewTL.x && rect.y <= viewTL.y &&
+          rectBR.x >= viewBR.x && rectBR.y >= viewBR.y);
+}
+
+/* like svg.getBBEnclosureList, but:
+ *  - only check against each element's bounding box
+ *  - assume no rotations or negative scales have been applied
+ *  - only check children of referenceElement, not all descendants
+ *  - return a simple Array instead of a live NodeList
+ * (also Firefox doesn't have getEnclosureList yet)
+ */
+function getBBEnclosureList(rect, referenceElement) {
+  var cs = referenceElement.childNodes;
+  var ret = [];
+  for (var i = 0; i < cs.length; i++) {
+    if ('getBBox' in cs[i] && checkBBEnclosure(cs[i], rect)) {
+      ret.push(cs[i]);
+    }
+  }
+  return ret;
+}
 
 // given the ID of an icon, call the callback with a CSS cursor declaration
 // using the icon (can't just return it because we need to "load" an image from
@@ -266,6 +312,22 @@ function onmousedown(e) {
   } else if (currentTool == 'move') {
     e.stopPropagation();
     draggedObject = doc.transform.baseVal.getItem(0);
+  } else if (currentTool == 'select') {
+    e.stopPropagation();
+    // move existing selection back to doc
+    var cs = selection.childNodes;
+    for (var i = cs.length - 1; i >= 0; i--) {
+      var c = cs[i];
+      selection.removeChild(c);
+      doc.appendChild(c);
+    }
+    // set coordinates of selectRect and make it visible
+    selectRect.setAttribute('x', e.pageX);
+    selectRect.setAttribute('y', e.pageY);
+    selectRect.setAttribute('width', 0);
+    selectRect.setAttribute('height', 0);
+    selectRect.setAttribute('style', '');
+    draggedObject = selectRect;
   }
 }
 
@@ -318,6 +380,9 @@ function onmousemove(e) {
 	y: draggedObject.matrix.f + currentMovement.y
       };
       draggedObject.setTranslate(newTranslate.x, newTranslate.y);
+    } else if (currentTool == 'select') {
+      draggedObject.width.baseVal.value += currentMovement.x;
+      draggedObject.height.baseVal.value += currentMovement.y;
     }
     // make sure doc and selection are in sync
     copyDocTransformToSelection();
@@ -342,6 +407,14 @@ function onmouseup(e) {
       draggedObject = null;
       deferredMovement = null;
     } else if (currentTool == 'move') {
+      draggedObject = null;
+    } else if (currentTool == 'select') {
+      var enclosed = getBBEnclosureList(draggedObject.getBBox(), doc);
+      for (var i = 0; i < enclosed.length; i++) {
+	doc.removeChild(enclosed[i]);
+	selection.appendChild(enclosed[i]);
+      }
+      selectRect.setAttribute('style', 'display: none;');
       draggedObject = null;
     }
   }
@@ -420,6 +493,7 @@ window.onload = function() {
   docAndSelection = document.getElementById("doc-and-selection");
   doc = document.getElementById("doc");
   selection = document.getElementById("selection");
+  selectRect = document.getElementById("select-rect");
   iconStyle = document.getElementById('icon-style').outerHTML;
   textToolInput = document.getElementById('text-tool-input');
   var menu = document.getElementById("menu");
@@ -544,10 +618,6 @@ window.onload = function() {
  </defs>
  <g id="doc-and-selection">
   <g id="doc" transform="translate(0,0) scale(1 1)">
-   <text transform="translate(100,100)">
-    <tspan>Hello,</tspan>
-    <tspan x="0" dy="1em">world!</tspan>
-   </text>
   </g>
   <g id="selection-filter">
    <g id="selection" transform="translate(0,0) scale(1 1)">
@@ -555,6 +625,7 @@ window.onload = function() {
   </g>
  </g>
  <g id="ui">
+  <rect id="select-rect" style="display: none;" x="0" y="0" width="0" height="0"></rect>
   <g id="menu-button" transform="translate(0,0)">
    <use xlink:href="#icon-frame" class="unclicked frame"/>
    <use xlink:href="#menu-icon" class="unclicked icon"/>
