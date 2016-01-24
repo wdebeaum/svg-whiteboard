@@ -54,8 +54,15 @@ circle.clicked.icon {
 .clicked.frame {
   fill: black;
 }
+text {
+  font-family: Symbola;
+}
 #cursor-canvas {
   display: none;
+}
+#text-tool-input {
+  font-family: Symbola;
+  position: absolute;
 }
 #doc-and-selection path {
   fill: none;
@@ -176,6 +183,21 @@ function makeToolbarUnclicked(elem) {
   });
 }
 
+var svgNS = "http://www.w3.org/2000/svg";
+var svg = undefined;
+var docAndSelection = undefined;
+var doc = undefined;
+var selection = undefined;
+var iconStyle = undefined;
+var textToolInput = undefined;
+var currentTool = 'draw';
+var currentSize = 5;
+var currentColor = '#00c';
+var draggedObject = null;
+var deferredMovement = null;
+var dragging = false;
+var mouseIsOverUI = false;
+
 // given the ID of an icon, call the callback with a CSS cursor declaration
 // using the icon (can't just return it because we need to "load" an image from
 // a data URL into a canvas...)
@@ -186,7 +208,7 @@ function iconToCursor(iconId, callback) {
     '<?xml version="1.0"?>' +
     '<svg xmlns="http://www.w3.org/2000/svg" width="32px" height="32px">' +
     '<defs>' +
-    document.getElementById('icon-style').outerHTML +
+    iconStyle +
     // ... but it also means we have an opportunity to put filter effects on
     // the icon like this
     '<filter id="outline" filterUnits="userSpaceOnUse" x="-10%" y="-10%" width="120%" height="120%">' +
@@ -213,19 +235,6 @@ function iconToCursor(iconId, callback) {
   };
   img.src = url;
 }
-
-var svgNS = "http://www.w3.org/2000/svg";
-var svg = undefined;
-var docAndSelection = undefined;
-var doc = undefined;
-var selection = undefined;
-var currentTool = 'draw';
-var currentSize = 5;
-var currentColor = '#00c';
-var draggedObject = null;
-var deferredMovement = null;
-var dragging = false;
-var mouseIsOverUI = false;
 
 function getEventCoordsRelativeToDoc(e) {
   var pageCoords = svg.createSVGPoint();
@@ -364,6 +373,45 @@ function onclick(e) {
     translate.setTranslate(newTranslate.x, newTranslate.y);
     scale.setScale(newScale, newScale);
     copyDocTransformToSelection();
+  } else if (currentTool == 'text') {
+    e.stopPropagation();
+    if (textToolInput.getAttribute('style') == 'display: none;') {
+      // textToolInput not displayed, so display it at the cursor and focus
+      textToolInput.setAttribute('style',
+        'left: ' + e.pageX + 'px; ' +
+	'top: ' + e.pageY + 'px; ' +
+	'font-size: ' + (parseInt(currentSize) + 7) + 'pt; ' +
+	'color: ' + currentColor + ';'
+      );
+      textToolInput.focus();
+    } else {
+      // textToolInput already displayed, so finalize it into an SVG text
+      var val = textToolInput.value;
+      var style = textToolInput.style;
+      var pageCoords = {
+	pageX: parseInt(style.getPropertyValue('left').replace(/px$/,'')),
+	pageY: parseInt(style.getPropertyValue('top').replace(/px$/,'')),
+      };
+      docCoords = getEventCoordsRelativeToDoc(pageCoords);
+      var text = document.createElementNS(svgNS, 'text');
+      text.setAttribute('transform', 'translate(' + docCoords.x + ', ' + docCoords.y + ')');
+      text.setAttribute('style',
+        'font-size: ' + style.getPropertyValue('font-size') + '; ' +
+        'fill: ' + style.getPropertyValue('color') + ';'
+      );
+      var lines = val.split("\n");
+      for (var i = 0; i < lines.length; i++) {
+	var tspan = document.createElementNS(svgNS, 'tspan');
+	tspan.setAttribute('x', 0);
+	tspan.setAttribute('dy', '1em');
+	tspan.appendChild(document.createTextNode(lines[i]));
+	text.appendChild(tspan);
+      }
+      doc.appendChild(text);
+      // clear the input and hide it
+      textToolInput.value = '';
+      textToolInput.setAttribute('style', 'display: none;');
+    }
   }
 }
 
@@ -372,6 +420,8 @@ window.onload = function() {
   docAndSelection = document.getElementById("doc-and-selection");
   doc = document.getElementById("doc");
   selection = document.getElementById("selection");
+  iconStyle = document.getElementById('icon-style').outerHTML;
+  textToolInput = document.getElementById('text-tool-input');
   var menu = document.getElementById("menu");
   hide(menu);
   var menuButton = document.getElementById("menu-button");
@@ -450,6 +500,7 @@ window.onload = function() {
 </head>
 <body>
 <canvas id="cursor-canvas" width="32" height="32"></canvas>
+<textarea id="text-tool-input" style="display: none;" placeholder="Enter text here and click elsewhere when done."></textarea>
 <svg>
  <defs>
   <filter id="shadow"
@@ -493,6 +544,10 @@ window.onload = function() {
  </defs>
  <g id="doc-and-selection">
   <g id="doc" transform="translate(0,0) scale(1 1)">
+   <text transform="translate(100,100)">
+    <tspan>Hello,</tspan>
+    <tspan x="0" dy="1em">world!</tspan>
+   </text>
   </g>
   <g id="selection-filter">
    <g id="selection" transform="translate(0,0) scale(1 1)">
