@@ -23,7 +23,7 @@
   - scrollwheel zoom
 - bugfixes
  - clicking on an object in select mode also selects objects in its bounding box?!
- - anchor selection when switching away from selection/copy tools
+ # anchor selection when switching away from selection/copy tools
  - cursor hotspots
  - don't fill selection cursor (or come up with a different cursor)
  - lots of refactoring

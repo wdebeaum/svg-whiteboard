@@ -307,6 +307,35 @@ function anchorSelection() {
   }
 }
 
+// convert the value of textToolInput to an SVG text node
+function finishTextInput() {
+  var val = textToolInput.value;
+  var style = textToolInput.style;
+  var pageCoords = {
+    pageX: parseInt(style.getPropertyValue('left').replace(/px$/,'')),
+    pageY: parseInt(style.getPropertyValue('top').replace(/px$/,'')),
+  };
+  docCoords = getEventCoordsRelativeToDoc(pageCoords);
+  var text = document.createElementNS(svgNS, 'text');
+  text.setAttribute('transform', 'translate(' + docCoords.x + ', ' + docCoords.y + ')');
+  text.setAttribute('style',
+    'font-size: ' + style.getPropertyValue('font-size') + '; ' +
+    'fill: ' + style.getPropertyValue('color') + ';'
+  );
+  var lines = val.split("\n");
+  for (var i = 0; i < lines.length; i++) {
+    var tspan = document.createElementNS(svgNS, 'tspan');
+    tspan.setAttribute('x', 0);
+    tspan.setAttribute('dy', '1em');
+    tspan.appendChild(document.createTextNode(lines[i]));
+    text.appendChild(tspan);
+  }
+  doc.appendChild(text);
+  // clear the input and hide it
+  textToolInput.value = '';
+  textToolInput.setAttribute('style', 'display: none;');
+}
+
 function onmousedown(e) {
   var docCoords = getEventCoordsRelativeToDoc(e);
   if (mouseIsOverUI) {
@@ -490,7 +519,7 @@ function onclick(e) {
     copyDocTransformToSelection();
   } else if (currentTool == 'text') {
     e.stopPropagation();
-    if (textToolInput.getAttribute('style') == 'display: none;') {
+    if (textToolInput.style.display == 'none') {
       // textToolInput not displayed, so display it at the cursor and focus
       textToolInput.setAttribute('style',
         'left: ' + e.pageX + 'px; ' +
@@ -501,31 +530,7 @@ function onclick(e) {
       textToolInput.focus();
     } else {
       // textToolInput already displayed, so finalize it into an SVG text
-      var val = textToolInput.value;
-      var style = textToolInput.style;
-      var pageCoords = {
-	pageX: parseInt(style.getPropertyValue('left').replace(/px$/,'')),
-	pageY: parseInt(style.getPropertyValue('top').replace(/px$/,'')),
-      };
-      docCoords = getEventCoordsRelativeToDoc(pageCoords);
-      var text = document.createElementNS(svgNS, 'text');
-      text.setAttribute('transform', 'translate(' + docCoords.x + ', ' + docCoords.y + ')');
-      text.setAttribute('style',
-        'font-size: ' + style.getPropertyValue('font-size') + '; ' +
-        'fill: ' + style.getPropertyValue('color') + ';'
-      );
-      var lines = val.split("\n");
-      for (var i = 0; i < lines.length; i++) {
-	var tspan = document.createElementNS(svgNS, 'tspan');
-	tspan.setAttribute('x', 0);
-	tspan.setAttribute('dy', '1em');
-	tspan.appendChild(document.createTextNode(lines[i]));
-	text.appendChild(tspan);
-      }
-      doc.appendChild(text);
-      // clear the input and hide it
-      textToolInput.value = '';
-      textToolInput.setAttribute('style', 'display: none;');
+      finishTextInput();
     }
   }
 }
@@ -554,12 +559,18 @@ window.onload = function() {
     var toolName = iconName.replace(/-icon$/,'');
     if (isButtonClicked(button)) {
       currentTool = toolName;
-      iconToCursor(iconName, (style) => svg.setAttribute('style', style));
+      iconToCursor(iconName, function(style) { svg.setAttribute('style', style); });
     }
     button.onclick = function(e) {
       e.stopPropagation();
+      if ((currentTool == 'select' || currentTool == 'copy') &&
+	 !(toolName == 'select' || toolName == 'copy')) {
+	anchorSelection();
+      } else if (currentTool == 'text' && toolName != 'text' && textToolInput.style.display != 'none') {
+	finishTextInput();
+      }
       currentTool = toolName;
-      iconToCursor(iconName, (style) => svg.setAttribute('style', style));
+      iconToCursor(iconName, function(style) { svg.setAttribute('style', style); });
       console.log("current tool is now " + currentTool);
       makeToolbarUnclicked(mainToolbar);
       makeButtonClicked(button);
