@@ -364,20 +364,31 @@ function onmousedown(e) {
   }
 }
 
+function getDocChild(targ) {
+  // select the child of doc that was clicked on
+  var o = targ;
+  while (o.parentNode != doc) {
+    if (!o.parentNode) {
+      throw "WTF";
+    }
+    o = o.parentNode;
+  }
+  return o;
+}
+
 function ondocmousedown(e) {
   if (currentTool == 'select') {
     e.stopPropagation();
     anchorSelection(); // get rid of old selection
-    // select the child of doc that was clicked on
-    var o = e.target;
-    while (o.parentNode != doc) {
-      if (!o.parentNode) {
-	throw "WTF";
-      }
-      o = o.parentNode;
-    }
+    var o = getDocChild(e.target);
     doc.removeChild(o);
     selection.appendChild(o);
+    draggedObject = selection;
+  } else if (currentTool == 'copy') {
+    e.stopPropagation();
+    var o = getDocChild(e.target);
+    var copy = o.cloneNode(true);
+    selection.appendChild(copy);
     draggedObject = selection;
   }
 }
@@ -385,6 +396,16 @@ function ondocmousedown(e) {
 function onselectionmousedown(e) {
   if (currentTool == 'select') {
     e.stopPropagation();
+    draggedObject = selection;
+  } else if (currentTool == 'copy') {
+    e.stopPropagation();
+    // copy selection back to doc, and drag original selection
+    var cs = selection.childNodes;
+    for (var i = 0; i < cs.length; i++) {
+      if ('cloneNode' in cs[i]) {
+	doc.appendChild(cs[i].cloneNode(true));
+      }
+    }
     draggedObject = selection;
   }
 }
@@ -438,7 +459,7 @@ function onmousemove(e) {
 	y: draggedObject.matrix.f + currentMovement.y
       };
       draggedObject.setTranslate(newTranslate.x, newTranslate.y);
-    } else if (currentTool == 'select') {
+    } else if (currentTool == 'select' || currentTool == 'copy') {
       if (draggedObject === selectRect) {
 	draggedObject.width.baseVal.value += currentMovement.x;
 	draggedObject.height.baseVal.value += currentMovement.y;
@@ -480,12 +501,16 @@ function onmouseup(e) {
     } else if (currentTool == 'move') {
       draggedObject = null;
     } else if (currentTool == 'select') {
-      var enclosed = getBBEnclosureList(draggedObject.getBBox(), doc);
-      for (var i = 0; i < enclosed.length; i++) {
-	doc.removeChild(enclosed[i]);
-	selection.appendChild(enclosed[i]);
+      if (draggedObject === selectRect) {
+	var enclosed = getBBEnclosureList(draggedObject.getBBox(), doc);
+	for (var i = 0; i < enclosed.length; i++) {
+	  doc.removeChild(enclosed[i]);
+	  selection.appendChild(enclosed[i]);
+	}
+	selectRect.setAttribute('style', 'display: none;');
       }
-      selectRect.setAttribute('style', 'display: none;');
+      draggedObject = null;
+    } else if (currentTool == 'copy') {
       draggedObject = null;
     }
   }

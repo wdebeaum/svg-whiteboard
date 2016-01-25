@@ -1,5 +1,5 @@
 = features
- - copy button
+ # copy button
  - connection tool
  - menu items
   - new: just clear everything in doc and selection
@@ -22,7 +22,7 @@
    - two-finger pan/move
   - scrollwheel zoom
 - bugfixes
- - clicking on an object in select mode also selects objects in its bounding box?!
+ # clicking on an object in select mode also selects objects in its bounding box?!
  # anchor selection when switching away from selection/copy tools
  - cursor hotspots
  - don't fill selection cursor (or come up with a different cursor)
