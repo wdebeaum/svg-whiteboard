@@ -297,6 +297,16 @@ function copyDocTransformToSelection() {
   selection.setAttribute("transform", doc.getAttribute("transform"));
 }
 
+// move existing selection back to doc
+function anchorSelection() {
+  var cs = selection.childNodes;
+  for (var i = cs.length - 1; i >= 0; i--) {
+    var c = cs[i];
+    selection.removeChild(c);
+    doc.appendChild(c);
+  }
+}
+
 function onmousedown(e) {
   var docCoords = getEventCoordsRelativeToDoc(e);
   if (mouseIsOverUI) {
@@ -314,13 +324,7 @@ function onmousedown(e) {
     draggedObject = doc.transform.baseVal.getItem(0);
   } else if (currentTool == 'select') {
     e.stopPropagation();
-    // move existing selection back to doc
-    var cs = selection.childNodes;
-    for (var i = cs.length - 1; i >= 0; i--) {
-      var c = cs[i];
-      selection.removeChild(c);
-      doc.appendChild(c);
-    }
+    anchorSelection();
     // set coordinates of selectRect and make it visible
     selectRect.setAttribute('x', e.pageX);
     selectRect.setAttribute('y', e.pageY);
@@ -328,6 +332,31 @@ function onmousedown(e) {
     selectRect.setAttribute('height', 0);
     selectRect.setAttribute('style', '');
     draggedObject = selectRect;
+  }
+}
+
+function ondocmousedown(e) {
+  if (currentTool == 'select') {
+    e.stopPropagation();
+    anchorSelection(); // get rid of old selection
+    // select the child of doc that was clicked on
+    var o = e.target;
+    while (o.parentNode != doc) {
+      if (!o.parentNode) {
+	throw "WTF";
+      }
+      o = o.parentNode;
+    }
+    doc.removeChild(o);
+    selection.appendChild(o);
+    draggedObject = selection;
+  }
+}
+
+function onselectionmousedown(e) {
+  if (currentTool == 'select') {
+    e.stopPropagation();
+    draggedObject = selection;
   }
 }
 
@@ -381,8 +410,21 @@ function onmousemove(e) {
       };
       draggedObject.setTranslate(newTranslate.x, newTranslate.y);
     } else if (currentTool == 'select') {
-      draggedObject.width.baseVal.value += currentMovement.x;
-      draggedObject.height.baseVal.value += currentMovement.y;
+      if (draggedObject === selectRect) {
+	draggedObject.width.baseVal.value += currentMovement.x;
+	draggedObject.height.baseVal.value += currentMovement.y;
+      } else { // dragging selected objects
+        // translate each selected object, and consolidate its transform list
+        var cs = selection.childNodes;
+	for (var i = cs.length-1; i >= 0; i--) {
+	  if ('transform' in cs[i]) {
+	    var translate = svg.createSVGTransform();
+	    translate.setTranslate(currentMovement.x, currentMovement.y);
+	    cs[i].transform.baseVal.appendItem(translate);
+	    cs[i].transform.baseVal.consolidate();
+	  }
+	}
+      }
     }
     // make sure doc and selection are in sync
     copyDocTransformToSelection();
@@ -569,6 +611,8 @@ window.onload = function() {
   svg.onmousemove = onmousemove;
   svg.onmouseup = onmouseup;
   svg.onclick = onclick;
+  doc.onmousedown = ondocmousedown;
+  selection.onmousedown = onselectionmousedown;
 }
 </script>
 </head>
