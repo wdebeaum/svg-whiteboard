@@ -16,7 +16,8 @@
 - UI enhancements
  - ctrl-zxcv shortcuts
  - better pan/zoom controls
-  - zoom level indicator/selector
+  # zoom level indicator
+  - zoom level selector
   - optional multitouch gestures
    - pinch zoom
    - two-finger pan/move
