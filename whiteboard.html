@@ -590,6 +590,7 @@ window.onload = function() {
   var newButton = document.getElementById("new-button");
   newButton.onclick = function(e) {
     e.stopPropagation();
+    toggleButtonClickedness(menuButton);
     toggleDisplay(menu);
     dismissTextInput();
     removeAllChildren(doc);
