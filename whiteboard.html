@@ -86,6 +86,9 @@ text {
 #selection-filter {
   filter: url('#shadow');
 }
+.popup {
+  filter: url('#shadow');
+}
 </style>
 <script type="text/javascript">
 function show(elem) {
@@ -803,21 +806,21 @@ window.onload = function() {
    <use xlink:href="#icon-frame" class="unclicked frame"/>
    <use xlink:href="#menu-icon" class="unclicked icon"/>
   </g>
-  <g id="menu" transform="translate(48,48)">
-   <line x1="-16" y1="-16" x2="0" y2="0" stroke="black" stroke-width="3px" />
-   <g id="new-button" transform="translate(0,0)">
+  <g id="menu" class="popup">
+   <line x1="32" y1="32" x2="48" y2="48" stroke="black" stroke-width="3px" />
+   <g id="new-button" transform="translate(48,48)">
     <use xlink:href="#icon-frame" class="unclicked frame"/>
     <use xlink:href="#new-icon" class="unclicked icon"/>
    </g>
-   <g id="open-button" transform="translate(0,32)">
+   <g id="open-button" transform="translate(48,80)">
     <use xlink:href="#icon-frame" class="unclicked frame"/>
     <use xlink:href="#open-icon" class="unclicked icon"/>
    </g>
-   <g id="save-button" transform="translate(0,64)">
+   <g id="save-button" transform="translate(48,114)">
     <use xlink:href="#icon-frame" class="unclicked frame"/>
     <use xlink:href="#save-icon" class="unclicked icon"/>
    </g>
-   <g id="settings-button" transform="translate(0,96)">
+   <g id="settings-button" transform="translate(48,146)">
     <use xlink:href="#icon-frame" class="unclicked frame"/>
     <use xlink:href="#settings-icon" class="unclicked icon"/>
    </g>
