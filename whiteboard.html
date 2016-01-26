@@ -70,6 +70,9 @@ text {
   font-family: Symbola;
   position: absolute;
 }
+#file-input {
+  display: none;
+}
 #doc-and-selection path {
   fill: none;
   stroke-linejoin: round;
@@ -347,6 +350,12 @@ function removeAllChildren(node) {
   }
 }
 
+function clearDocument() {
+  dismissTextInput();
+  removeAllChildren(doc);
+  removeAllChildren(selection);
+}
+
 function onmousedown(e) {
   var docCoords = getEventCoordsRelativeToDoc(e);
   if (mouseIsOverUI) {
@@ -592,9 +601,40 @@ window.onload = function() {
     e.stopPropagation();
     toggleButtonClickedness(menuButton);
     toggleDisplay(menu);
-    dismissTextInput();
-    removeAllChildren(doc);
-    removeAllChildren(selection);
+    clearDocument();
+  };
+  var openButton = document.getElementById("open-button");
+  var fileInput = document.getElementById("file-input");
+  openButton.onclick = function(e) {
+    e.stopPropagation();
+    toggleButtonClickedness(menuButton);
+    toggleDisplay(menu);
+    fileInput.click();
+  };
+  // FIXME how to let the user load the same file twice in a row?
+  fileInput.onchange = function(e) {
+    clearDocument();
+    var file = fileInput.files[0];
+    console.log("opening file " + file.name);
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      // make a new Document from the file contents
+      var parser = new DOMParser();
+      var newDocument = parser.parseFromString(e.target.result, 'text/html');
+      // replace our doc-and-selection with the one from the file
+      var newDocAndSelection = newDocument.getElementById("doc-and-selection");
+      if (!newDocAndSelection) {
+	alert("failed to open file; missing doc-and-selection element");
+	console.log(newDocument);
+	return;
+      }
+      docAndSelection.outerHTML = newDocAndSelection.outerHTML;
+      // redo our global vars pointing into that part of the document
+      docAndSelection = document.getElementById("doc-and-selection");
+      doc = document.getElementById("doc");
+      selection = document.getElementById("selection");
+    };
+    reader.readAsText(file);
   };
   var mainToolbar = document.getElementById("main-toolbar");
   forEachToolbarButton(mainToolbar, function(button) {
@@ -699,6 +739,7 @@ window.onload = function() {
 <body>
 <canvas id="cursor-canvas" width="32" height="32"></canvas>
 <textarea id="text-tool-input" style="display: none;" placeholder="Enter text here and click elsewhere when done."></textarea>
+<input id="file-input" type="file">
 <svg>
  <defs>
   <filter id="shadow"
