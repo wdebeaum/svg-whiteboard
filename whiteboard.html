@@ -307,6 +307,12 @@ function anchorSelection() {
   }
 }
 
+function dismissTextInput() {
+  // clear the input and hide it
+  textToolInput.value = '';
+  textToolInput.setAttribute('style', 'display: none;');
+}
+
 // convert the value of textToolInput to an SVG text node
 function finishTextInput() {
   var val = textToolInput.value;
@@ -331,9 +337,14 @@ function finishTextInput() {
     text.appendChild(tspan);
   }
   doc.appendChild(text);
-  // clear the input and hide it
-  textToolInput.value = '';
-  textToolInput.setAttribute('style', 'display: none;');
+  dismissTextInput();
+}
+
+function removeAllChildren(node) {
+  var cs = node.childNodes;
+  for (var i = cs.length-1; i >= 0; i--) {
+    node.removeChild(cs[i]);
+  }
 }
 
 function onmousedown(e) {
@@ -576,6 +587,14 @@ window.onload = function() {
     toggleButtonClickedness(menuButton);
     toggleDisplay(menu);
   };
+  var newButton = document.getElementById("new-button");
+  newButton.onclick = function(e) {
+    e.stopPropagation();
+    toggleDisplay(menu);
+    dismissTextInput();
+    removeAllChildren(doc);
+    removeAllChildren(selection);
+  };
   var mainToolbar = document.getElementById("main-toolbar");
   forEachToolbarButton(mainToolbar, function(button) {
     var iconUse = button.childNodes[button.childNodes.length - 2];
@@ -657,10 +676,7 @@ window.onload = function() {
   deleteButton.onclick = function(e) {
     e.stopPropagation();
     // remove all children of the selection node
-    var cs = selection.childNodes;
-    for (var i = cs.length-1; i >= 0; i--) {
-      selection.removeChild(cs[i]);
-    }
+    removeAllChildren(selection);
   }
   var uiGroup = document.getElementById("ui");
   uiGroup.onmouseover = function() {
@@ -739,19 +755,19 @@ window.onload = function() {
   </g>
   <g id="menu" transform="translate(48,48)">
    <line x1="-16" y1="-16" x2="0" y2="0" stroke="black" stroke-width="3px" />
-   <g transform="translate(0,0)">
+   <g id="new-button" transform="translate(0,0)">
     <use xlink:href="#icon-frame" class="unclicked frame"/>
     <use xlink:href="#new-icon" class="unclicked icon"/>
    </g>
-   <g transform="translate(0,32)">
+   <g id="open-button" transform="translate(0,32)">
     <use xlink:href="#icon-frame" class="unclicked frame"/>
     <use xlink:href="#open-icon" class="unclicked icon"/>
    </g>
-   <g transform="translate(0,64)">
+   <g id="save-button" transform="translate(0,64)">
     <use xlink:href="#icon-frame" class="unclicked frame"/>
     <use xlink:href="#save-icon" class="unclicked icon"/>
    </g>
-   <g transform="translate(0,96)">
+   <g id="settings-button" transform="translate(0,96)">
     <use xlink:href="#icon-frame" class="unclicked frame"/>
     <use xlink:href="#settings-icon" class="unclicked icon"/>
    </g>

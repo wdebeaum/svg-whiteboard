@@ -2,7 +2,7 @@
  # copy button
  - connection tool
  - menu items
-  - new: just clear everything in doc and selection
+  # new: just clear everything in doc and selection
   - open: load file and copy everything under doc-and-selection
    - import: load file and put its contents in the selection
   - save: make data URI from document.outerHTML, put it in a link with a content-disposition that makes the browser save it instead of loading it again
