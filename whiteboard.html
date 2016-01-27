@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html>
-<head>
+<html xmlns:xlink="http://www.w3.org/1999/xlink"><head>
 <meta charset="UTF-8">
 <title>SVG Whiteboard</title>
 <style type="text/css" id="icon-style">
@@ -76,6 +75,9 @@ text {
   position: absolute;
 }
 #file-input {
+  display: none;
+}
+#file-output {
   display: none;
 }
 #doc-and-selection path {
@@ -622,11 +624,14 @@ window.onload = function() {
     toggleDisplay(menu);
     fileInput.click();
   };
+  var fileOutput = document.getElementById("file-output");
   // FIXME how to let the user load the same file twice in a row?
   fileInput.onchange = function(e) {
     clearDocument();
     var file = fileInput.files[0];
     console.log("opening file " + file.name);
+    // keep the filename we opened as the one to save back to
+    fileOutput.download = file.name;
     var reader = new FileReader();
     reader.onload = function(e) {
       // make a new Document from the file contents
@@ -646,6 +651,26 @@ window.onload = function() {
       selection = document.getElementById("selection");
     };
     reader.readAsText(file);
+  };
+  var saveButton = document.getElementById("save-button");
+  saveButton.onclick = function(e) {
+    e.stopPropagation();
+    toggleButtonClickedness(menuButton);
+    toggleDisplay(menu);
+    fileOutput.removeAttribute('href'); // don't include recursive copies
+    // don't include cursor image
+    var oldStyle = svg.getAttribute('style');
+    svg.removeAttribute('style');
+    var everything = "<!DOCTYPE html>\n" + document.documentElement.outerHTML + "\n";
+    everything = everything.
+      // get rid of unneccessary xmlns:xlink declaration on each <use>
+      replace(/<use xmlns:xlink="http:\/\/www.w3.org\/1999\/xlink" xlink:href="/g, '<use xlink:href="').
+      // get rid of extra whitespace before body end tag
+      replace(/\s+<\/body>/, "\n</body>");
+    fileOutput.href = 'data:text/html;charset=utf-8,' + encodeURIComponent(everything);
+    fileOutput.click();
+    // restore cursor
+    svg.setAttribute('style', oldStyle);
   };
   var mainToolbar = document.getElementById("main-toolbar");
   forEachToolbarButton(mainToolbar, function(button) {
@@ -751,16 +776,15 @@ window.onload = function() {
 <canvas id="cursor-canvas" width="32" height="32"></canvas>
 <textarea id="text-tool-input" style="display: none;" placeholder="Enter text here and click elsewhere when done."></textarea>
 <input id="file-input" type="file">
+<a id="file-output" download="whiteboard.html">whiteboard.html</a>
 <svg>
  <defs>
-  <filter id="shadow"
-   filterUnits="userSpaceOnUse"
-   x="0" y="0" width="100%" height="100%">
-   <feOffset result="offset" in="SourceAlpha" dx="2" dy="2" />
-   <feGaussianBlur result="blur" in="offset" stdDeviation="3" />
-   <feBlend in="SourceGraphic" in2="blur" mode="normal" />
+  <filter id="shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">
+   <feOffset result="offset" in="SourceAlpha" dx="2" dy="2"></feOffset>
+   <feGaussianBlur result="blur" in="offset" stdDeviation="3"></feGaussianBlur>
+   <feBlend in="SourceGraphic" in2="blur" mode="normal"></feBlend>
   </filter>
-  <rect id="icon-frame" x="0" y="0" width="32" height="32">
+  <rect id="icon-frame" x="0" y="0" width="32" height="32"></rect>
   <text id="move-icon" class="icon" x="1px" y="2ex">
    <tspan>←</tspan><tspan dx="-0.5em">→</tspan><tspan dx="-1em" dy="-0.5ex">↑</tspan><tspan dx="-1ex" dy="1ex">↓</tspan>
   </text>
@@ -775,7 +799,7 @@ window.onload = function() {
   <text id="new-icon" class="icon" x="6px" y="2ex"><tspan dy="0.5ex" font-size="24pt">🗋</tspan><tspan dy="-0.5ex"> New</tspan></text>
   <text id="settings-icon" class="icon" x="6px" y="2ex">⚙<tspan dx="0.5ex"> Settings...</tspan></text>
   <text id="connect-icon" class="icon" x="4px" y="2ex">↗</text>
-  <rect id="select-icon" class="icon" x="6px" y="6px" width="20px" height="20px">
+  <rect id="select-icon" class="icon" x="6px" y="6px" width="20px" height="20px"></rect>
   <!-- text id="cut-icon" class="icon" x="4px" y="2ex">✄</text -->
   <text id="delete-icon" x="6px" y="1.75ex" font-size="24pt">🗑</text>
   <text id="copy-icon" class="icon" x="4px" y="1.75ex">
@@ -803,71 +827,71 @@ window.onload = function() {
  <g id="ui">
   <rect id="select-rect" style="display: none;" x="0" y="0" width="0" height="0"></rect>
   <g id="menu-button" transform="translate(0,0)">
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <use xlink:href="#menu-icon" class="unclicked icon"/>
+   <use xlink:href="#icon-frame" class="unclicked frame"></use>
+   <use xlink:href="#menu-icon" class="unclicked icon"></use>
   </g>
-  <g id="menu" class="popup">
-   <line x1="32" y1="32" x2="48" y2="48" stroke="black" stroke-width="3px" />
+  <g id="menu" class="popup" style="display: none;">
+   <line x1="32" y1="32" x2="48" y2="48" stroke="black" stroke-width="3px"></line>
    <g id="new-button" transform="translate(48,48)">
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <use xlink:href="#new-icon" class="unclicked icon"/>
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <use xlink:href="#new-icon" class="unclicked icon"></use>
    </g>
    <g id="open-button" transform="translate(48,80)">
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <use xlink:href="#open-icon" class="unclicked icon"/>
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <use xlink:href="#open-icon" class="unclicked icon"></use>
    </g>
    <g id="save-button" transform="translate(48,114)">
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <use xlink:href="#save-icon" class="unclicked icon"/>
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <use xlink:href="#save-icon" class="unclicked icon"></use>
    </g>
    <g id="settings-button" transform="translate(48,146)">
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <use xlink:href="#settings-icon" class="unclicked icon"/>
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <use xlink:href="#settings-icon" class="unclicked icon"></use>
    </g>
   </g>
   <!-- left side toolbar -->
   <g id="main-toolbar">
    <g transform="translate(0,64)">
     <title>draw freehand lines</title>
-    <use xlink:href="#icon-frame" class="clicked frame"/>
-    <use xlink:href="#draw-icon" class="clicked icon"/>
+    <use xlink:href="#icon-frame" class="clicked frame"></use>
+    <use xlink:href="#draw-icon" class="clicked icon"></use>
    </g>
    <g transform="translate(0,96)">
     <title>add text</title>
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <use xlink:href="#text-icon" class="unclicked icon"/>
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <use xlink:href="#text-icon" class="unclicked icon"></use>
    </g>
    <g transform="translate(0,128)">
     <title>connect objects with arrows</title>
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <use xlink:href="#connect-icon" class="unclicked icon"/>
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <use xlink:href="#connect-icon" class="unclicked icon"></use>
    </g>
 
    <g transform="translate(0,192)">
     <title>select groups of objects and then move them, change their properties, or delete them</title>
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <use xlink:href="#select-icon" class="unclicked icon" id="select-icon-use" />
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <use xlink:href="#select-icon" class="unclicked icon" id="select-icon-use"></use>
    </g>
    <g transform="translate(0,224)">
     <title>copy objects or selected groups of objects</title>
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <use xlink:href="#copy-icon" class="unclicked icon"/>
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <use xlink:href="#copy-icon" class="unclicked icon"></use>
    </g>
 
    <g transform="translate(0,288)">
     <title>pan</title>
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <use xlink:href="#move-icon" class="unclicked icon"/>
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <use xlink:href="#move-icon" class="unclicked icon"></use>
    </g>
    <g transform="translate(0,320)">
     <title>zoom in</title>
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <use xlink:href="#zoom-in-icon" class="unclicked icon"/>
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <use xlink:href="#zoom-in-icon" class="unclicked icon"></use>
    </g>
    <g transform="translate(0,368)">
     <title>zoom out</title>
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <use xlink:href="#zoom-out-icon" class="unclicked icon"/>
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <use xlink:href="#zoom-out-icon" class="unclicked icon"></use>
    </g>
   </g>
   <!-- top side properties bar -->
@@ -875,66 +899,66 @@ window.onload = function() {
   <g id="size-toolbar">
    <g transform="translate(64,0)">
     <title>set pen width</title>
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <circle cx="16" cy="16" r="9" class="unclicked icon"/>
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <circle cx="16" cy="16" r="9" class="unclicked icon"></circle>
    </g>
    <g transform="translate(96,0)">
     <title>set pen width</title>
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <circle cx="16" cy="16" r="7" class="unclicked icon"/>
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <circle cx="16" cy="16" r="7" class="unclicked icon"></circle>
    </g>
    <g transform="translate(128,0)">
     <title>set pen width</title>
-    <use xlink:href="#icon-frame" class="clicked frame"/>
-    <circle cx="16" cy="16" r="5" class="clicked icon"/>
+    <use xlink:href="#icon-frame" class="clicked frame"></use>
+    <circle cx="16" cy="16" r="5" class="clicked icon"></circle>
    </g>
    <g transform="translate(160,0)">
     <title>set pen width</title>
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <circle cx="16" cy="16" r="3" class="unclicked icon"/>
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <circle cx="16" cy="16" r="3" class="unclicked icon"></circle>
    </g>
    <g transform="translate(192,0)">
     <title>set pen width</title>
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <circle cx="16" cy="16" r="1" class="unclicked icon"/>
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <circle cx="16" cy="16" r="1" class="unclicked icon"></circle>
    </g>
   </g>
   <!-- colors -->
   <g id="color-toolbar">
    <g transform="translate(256,0)">
     <title>set pen color</title>
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#c00"/>
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#c00"></circle>
    </g>
    <g transform="translate(288,0)">
     <title>set pen color</title>
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#cc0"/>
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#cc0"></circle>
    </g>
    <g transform="translate(320,0)">
     <title>set pen color</title>
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#0c0"/>
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#0c0"></circle>
    </g>
    <g transform="translate(352,0)">
     <title>set pen color</title>
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#0cc"/>
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#0cc"></circle>
    </g>
    <g transform="translate(384,0)">
     <title>set pen color</title>
-    <use xlink:href="#icon-frame" class="clicked frame"/>
-    <circle cx="16" cy="16" r="10" class="clicked color" fill="#00c"/>
+    <use xlink:href="#icon-frame" class="clicked frame"></use>
+    <circle cx="16" cy="16" r="10" class="clicked color" fill="#00c"></circle>
    </g>
    <g transform="translate(416,0)">
     <title>set pen color</title>
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#c0c"/>
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#c0c"></circle>
    </g>
    <g transform="translate(448,0)">
     <title>set pen color</title>
-    <use xlink:href="#icon-frame" class="unclicked frame"/>
-    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#000"/>
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#000"></circle>
    </g>
   </g>
 
@@ -942,10 +966,9 @@ window.onload = function() {
 
   <g id="delete-button" transform="translate(512,0)">
    <title>delete selected group of objects</title>
-   <use xlink:href="#icon-frame" class="unclicked frame"/>
-   <use xlink:href="#delete-icon" class="unclicked icon"/>
+   <use xlink:href="#icon-frame" class="unclicked frame"></use>
+   <use xlink:href="#delete-icon" class="unclicked icon"></use>
   </g>
  </g>
 </svg>
-</body>
-</html>
+</body></html>
