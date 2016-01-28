@@ -262,6 +262,11 @@ function getBBEnclosureList(rect, referenceElement) {
 // using the icon (can't just return it because we need to "load" an image from
 // a data URL into a canvas...)
 function iconToCursor(iconId, callback) {
+  var iconDef = document.getElementById(iconId);
+  var hotspot = "16 16";
+  if (iconDef.hasAttribute("hotspot")) {
+    hotspot = iconDef.getAttribute("hotspot");
+  }
   // It would be nice if this were just "cursor: url(#" + iconID + ");", but
   // that's not the world we live in :-P
   var iconSVG =
@@ -278,7 +283,7 @@ function iconToCursor(iconId, callback) {
     '</filter>' +
     '</defs>' +
     '<g style="filter: url(#outline);">' +
-    document.getElementById(iconId).outerHTML +
+    iconDef.outerHTML +
     '</g>' +
     '</svg>';
   // FIXME the "hot spot" is different for each icon, how to store?
@@ -291,7 +296,7 @@ function iconToCursor(iconId, callback) {
   var url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(iconSVG);
   img.onload = function() {
     ctx.drawImage(img,0,0);
-    callback("cursor: url('" + canvas.toDataURL('image/png') + "') 16 16, auto;");
+    callback("cursor: url('" + canvas.toDataURL('image/png') + "') " + hotspot + ", auto;");
   };
   img.src = url;
 }
@@ -794,23 +799,23 @@ window.onload = function() {
   <text id="open-icon" class="icon" x="4px" y="2ex">
    <tspan>💾</tspan><tspan dx="-0.75ex" dy="-0.25ex" stroke="black" fill="#0c0">⬆</tspan><tspan dy="0.25ex"> Open...</tspan>
   </text>
-  <text id="draw-icon" x="2px" y="1.75ex" font-size="24pt">✎</text>
-  <text id="text-icon" x="4px" y="1.75ex" font-size="24pt">T</text>
+  <text id="draw-icon" x="2px" y="1.75ex" font-size="24pt" hotspot="24 24">✎</text>
+  <text id="text-icon" x="4px" y="1.75ex" font-size="24pt" hotspot="6 6">T</text>
   <text id="new-icon" class="icon" x="6px" y="2ex"><tspan dy="0.5ex" font-size="24pt">🗋</tspan><tspan dy="-0.5ex"> New</tspan></text>
   <text id="settings-icon" class="icon" x="6px" y="2ex">⚙<tspan dx="0.5ex"> Settings...</tspan></text>
-  <text id="connect-icon" class="icon" x="4px" y="2ex">↗</text>
-  <rect id="select-icon" class="icon" x="6px" y="6px" width="20px" height="20px"></rect>
+  <text id="connect-icon" class="icon" x="4px" y="2ex" hotspot="24 8">↗</text>
+  <rect id="select-icon" class="icon" x="6px" y="6px" width="20px" height="20px" hotspot="6 6"></rect>
   <!-- text id="cut-icon" class="icon" x="4px" y="2ex">✄</text -->
   <text id="delete-icon" x="6px" y="1.75ex" font-size="24pt">🗑</text>
-  <text id="copy-icon" class="icon" x="4px" y="1.75ex">
+  <text id="copy-icon" class="icon" x="4px" y="1.75ex" hotspot="6 6">
    <tspan>⎕</tspan>
    <tspan dx="-1.25ex" dy="0.5ex">❏</tspan>
   </text>
-  <text id="zoom-in-icon" class="icon" x="2px" y="2ex">
+  <text id="zoom-in-icon" class="icon" x="2px" y="2ex" hotspot="12 12">
    <tspan>🔍</tspan>
    <tspan dx="-1ex">⁺</tspan>
   </text>
-  <text id="zoom-out-icon" class="icon" x="2px" y="2ex">
+  <text id="zoom-out-icon" class="icon" x="2px" y="2ex" hotspot="12 12">
    <tspan>🔍</tspan>
    <tspan dx="-1ex">⁻</tspan>
   </text>
