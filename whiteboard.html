@@ -372,6 +372,33 @@ function clearDocument() {
   removeAllChildren(selection);
 }
 
+function panRelative(delta, draggedObject) {
+  if (!draggedObject) {
+    draggedObject = doc.transform.baseVal.getItem(0);
+  }
+  var newTranslate = {
+    x: draggedObject.matrix.e + delta.x,
+    y: draggedObject.matrix.f + delta.y
+  };
+  draggedObject.setTranslate(newTranslate.x, newTranslate.y);
+}
+
+function zoomRelative(factor, docCoords) {
+  var transform = doc.transform.baseVal;
+  var translate = transform.getItem(0);
+  var scale = transform.getItem(1);
+  var scaleVal = scale.matrix.a;
+  var newScale = scaleVal * factor;
+  var newTranslate = {
+    x: translate.matrix.e + docCoords.x * scaleVal * (1-factor),
+    y: translate.matrix.f + docCoords.y * scaleVal * (1-factor)
+  };
+  translate.setTranslate(newTranslate.x, newTranslate.y);
+  scale.setScale(newScale, newScale);
+  copyDocTransformToSelection();
+  zoomFactor.innerHTML = '' + newScale + 'x';
+}
+
 function onmousedown(e) {
   var docCoords = getEventCoordsRelativeToDoc(e);
   if (mouseIsOverUI) {
@@ -490,11 +517,7 @@ function onmousemove(e) {
 	draggedObject.setAttribute('d', d);
       }
     } else if (currentTool == 'move') {
-      var newTranslate = {
-	x: draggedObject.matrix.e + currentMovement.x,
-	y: draggedObject.matrix.f + currentMovement.y
-      };
-      draggedObject.setTranslate(newTranslate.x, newTranslate.y);
+      panRelative(currentMovement, draggedObject);
     } else if (currentTool == 'select' || currentTool == 'copy') {
       if (draggedObject === selectRect) {
 	draggedObject.width.baseVal.value += currentMovement.x;
@@ -514,6 +537,26 @@ function onmousemove(e) {
     }
     // make sure doc and selection are in sync
     copyDocTransformToSelection();
+  }
+}
+
+function onwheel(e) {
+  e.stopPropagation(e);
+  var docCoords = getEventCoordsRelativeToDoc(e);
+  var delta = { x: e.deltaX, y: e.deltaY, z: e.deltaZ };
+  if (e.deltaMode != WheelEvent.DOM_DELTA_PIXEL) {
+    delta.x *= 16;
+    delta.y *= 16;
+    delta.z *= 16;
+  }
+  console.log(delta.x + ' ' + delta.y);
+  if (/^zoom-/.test(currentTool)) {
+    // for some reason y is in chunks of 53 in Chrome, and 48 in Firefox?
+    zoomRelative(Math.pow(2, delta.y / 53), docCoords);
+  } else {
+    // ... also x is in chunks of 53 and 16, respectively.
+    panRelative(delta);
+    // TODO use z to zoom?
   }
 }
 
@@ -558,27 +601,8 @@ function onclick(e) {
     // do nothing
   } else if (/^zoom-/.test(currentTool)) {
     e.stopPropagation();
-    var transform = doc.transform.baseVal;
-    var translate = transform.getItem(0);
-    var scale = transform.getItem(1);
-    var scaleVal = scale.matrix.a;
-    if (currentTool == 'zoom-in') {
-      var newTranslate = {
-	x: translate.matrix.e - docCoords.x * scaleVal,
-	y: translate.matrix.f - docCoords.y * scaleVal
-      };
-      var newScale = scaleVal * 2;
-    } else { // zoom-out
-      var newScale = scaleVal / 2;
-      var newTranslate = {
-	x: translate.matrix.e + docCoords.x * newScale,
-	y: translate.matrix.f + docCoords.y * newScale
-      };
-    }
-    translate.setTranslate(newTranslate.x, newTranslate.y);
-    scale.setScale(newScale, newScale);
-    copyDocTransformToSelection();
-    zoomFactor.innerHTML = '' + newScale + 'x';
+    var factor = (currentTool == 'zoom-in' ? 2 : 0.5);
+    zoomRelative(factor, docCoords);
   } else if (currentTool == 'text') {
     e.stopPropagation();
     if (textToolInput.style.display == 'none') {
@@ -770,6 +794,7 @@ window.onload = function() {
 
   svg.onmousedown = onmousedown;
   svg.onmousemove = onmousemove;
+  svg.onwheel = onwheel;
   svg.onmouseup = onmouseup;
   svg.onclick = onclick;
   doc.onmousedown = ondocmousedown;

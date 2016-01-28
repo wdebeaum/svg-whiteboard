@@ -20,8 +20,8 @@
   - zoom level selector
   - optional multitouch gestures
    - pinch zoom
-   - two-finger pan/move
-  - scrollwheel zoom
+   # two-finger pan/move
+  # scrollwheel zoom
 - bugfixes
  # clicking on an object in select mode also selects objects in its bounding box?!
  # anchor selection when switching away from selection/copy tools
