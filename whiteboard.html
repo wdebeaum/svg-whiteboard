@@ -523,6 +523,9 @@ function onmousemove(e) {
 	draggedObject.width.baseVal.value += currentMovement.x;
 	draggedObject.height.baseVal.value += currentMovement.y;
       } else { // dragging selected objects
+        var scaleVal = doc.transform.baseVal.getItem(1).matrix.a;
+	currentMovement.x /= scaleVal;
+	currentMovement.y /= scaleVal;
         // translate each selected object, and consolidate its transform list
         var cs = selection.childNodes;
 	for (var i = cs.length-1; i >= 0; i--) {
