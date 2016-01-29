@@ -379,6 +379,7 @@ function panRelative(delta, draggedObject) {
     y: draggedObject.matrix.f + delta.y
   };
   draggedObject.setTranslate(newTranslate.x, newTranslate.y);
+  copyDocTransformToSelection();
 }
 
 function zoomRelative(factor, docCoords) {
