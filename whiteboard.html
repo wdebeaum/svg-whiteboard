@@ -730,7 +730,7 @@ function onwheel(e) {
   console.log(delta.x + ' ' + delta.y);
   if (/^zoom-/.test(currentTool)) {
     // for some reason y is in chunks of 53 in Chrome, and 48 in Firefox?
-    zoomRelative(Math.pow(2, delta.y / 53), docCoords);
+    zoomRelative(Math.pow(2, -delta.y / 53), docCoords);
   } else {
     // ... also x is in chunks of 53 and 16, respectively.
     panRelative(delta);
@@ -944,20 +944,21 @@ window.onload = function() {
    <feBlend in="SourceGraphic" in2="blur" mode="normal"></feBlend>
   </filter>
   <rect id="icon-frame" x="0" y="0" width="32" height="32"></rect>
-  <text id="move-icon" class="icon" x="1px" y="2ex">
-   <tspan>←</tspan><tspan dx="-0.5em">→</tspan><tspan dx="-1em" dy="-0.5ex">↑</tspan><tspan dx="-1ex" dy="1ex">↓</tspan>
+  <text id="move-icon" class="icon" x="1px" y="2.2ex" font-weight="bold">
+   <tspan>←</tspan><tspan dx="-0.5em">→</tspan><tspan dx="-1em" dy="-0.5ex">↑</tspan><tspan dx="-1.1ex" dy="1ex">↓</tspan>
   </text>
   <text id="save-icon" class="icon" x="4px" y="2ex">
-   <tspan>💾</tspan><tspan dx="-2.25ex" dy="-0.25ex" stroke="black" fill="#0c0">⬇</tspan><tspan dx="1.25ex" dy="0.25ex"> Save...</tspan>
+   <tspan>💾</tspan><tspan dx="-2.25ex" dy="-0.25ex" stroke="black" fill="#0c0">⬇</tspan><tspan x="3ex" dy="0.25ex"> Save...</tspan>
   </text>
   <text id="open-icon" class="icon" x="4px" y="2ex">
-   <tspan>💾</tspan><tspan dx="-0.75ex" dy="-0.25ex" stroke="black" fill="#0c0">⬆</tspan><tspan dy="0.25ex"> Open...</tspan>
+   <tspan>💾</tspan><tspan dx="-0.75ex" dy="-0.25ex" stroke="black" fill="#0c0">⬆</tspan><tspan x="3ex" dy="0.25ex"> Open...</tspan>
   </text>
   <text id="draw-icon" x="2px" y="1.75ex" font-size="24pt" hotspot="24 24">✎</text>
   <text id="text-icon" x="4px" y="1.75ex" font-size="24pt" hotspot="6 6">T</text>
-  <text id="new-icon" class="icon" x="6px" y="2ex"><tspan dy="0.5ex" font-size="24pt">🗋</tspan><tspan dy="-0.5ex"> New</tspan></text>
-  <text id="settings-icon" class="icon" x="6px" y="2ex">⚙<tspan dx="0.5ex"> Settings...</tspan></text>
-  <text id="connect-icon" class="icon" x="4px" y="2ex" hotspot="24 8">↗</text>
+  <text id="new-icon" class="icon" x="6px" y="2ex"><tspan dy="0.5ex" font-size="24pt">🗋</tspan><tspan x="3ex" dy="-0.5ex"> New</tspan></text>
+  <text id="settings-icon" class="icon" x="6px" y="2ex">⚙<tspan x="3ex"> Settings...</tspan></text>
+  <text id="help-icon" class="icon" x="8px" y="2.6ex"><tspan font-size="24pt">?</tspan><tspan x="3ex" dy="-0.6ex"> Help...</tspan></text>
+  <text id="connect-icon" class="icon" x="4px" y="2ex" font-weight="bold" hotspot="24 8">↗</text>
   <rect id="select-icon" class="icon" x="6px" y="6px" width="20px" height="20px" hotspot="6 6"></rect>
   <!-- text id="cut-icon" class="icon" x="4px" y="2ex">✄</text -->
   <text id="delete-icon" x="6px" y="1.75ex" font-size="24pt">🗑</text>
@@ -965,11 +966,11 @@ window.onload = function() {
    <tspan>⎕</tspan>
    <tspan dx="-1.25ex" dy="0.5ex">❏</tspan>
   </text>
-  <text id="zoom-in-icon" class="icon" x="2px" y="2ex" hotspot="12 12">
+  <text id="zoom-in-icon" class="icon" x="2px" y="2ex" hotspot="10 10">
    <tspan>🔍</tspan>
    <tspan dx="-1ex">⁺</tspan>
   </text>
-  <text id="zoom-out-icon" class="icon" x="2px" y="2ex" hotspot="12 12">
+  <text id="zoom-out-icon" class="icon" x="2px" y="2ex" hotspot="10 10">
    <tspan>🔍</tspan>
    <tspan dx="-1ex">⁻</tspan>
   </text>
@@ -1002,6 +1003,10 @@ window.onload = function() {
    <g id="settings-button" transform="translate(48,144)">
     <use xlink:href="#icon-frame" class="unclicked frame"></use>
     <use xlink:href="#settings-icon" class="unclicked icon"></use>
+   </g>
+   <g id="help-button" transform="translate(48,176)">
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <use xlink:href="#help-icon" class="unclicked icon"></use>
    </g>
   </g>
   <g id="menu-button" transform="translate(0,0)">
