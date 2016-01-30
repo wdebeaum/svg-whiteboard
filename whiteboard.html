@@ -66,6 +66,10 @@ circle.clicked.icon {
 }
 text {
   font-family: Symbola;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 #cursor-canvas {
   display: none;
@@ -379,7 +383,6 @@ function panRelative(delta, draggedObject) {
     y: draggedObject.matrix.f + delta.y
   };
   draggedObject.setTranslate(newTranslate.x, newTranslate.y);
-  copyDocTransformToSelection();
 }
 
 function zoomRelative(factor, docCoords) {
@@ -854,6 +857,7 @@ window.onload = function() {
   svg.onwheel = onwheel;
   svg.onmouseup = onmouseup;
   svg.onclick = onclick;
+  svg.ondragstart = function(e) { e.preventDefault() };
   doc.onmousedown = ondocmousedown;
   selection.onmousedown = onselectionmousedown;
 }
@@ -960,7 +964,7 @@ window.onload = function() {
     <use xlink:href="#select-icon" class="unclicked icon" id="select-icon-use"></use>
    </g>
    <g transform="translate(0,224)">
-    <title>copy objects or selected groups of objects</title>
+    <title>copy objects or selected groups of objects, by dragging</title>
     <use xlink:href="#icon-frame" class="unclicked frame"></use>
     <use xlink:href="#copy-icon" class="unclicked icon"></use>
    </g>
