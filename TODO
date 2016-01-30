@@ -15,7 +15,7 @@
   ? with A/V/text chat inset
 - UI enhancements
  - ctrl-zxcv shortcuts (via corresponding events?)
- - clicking with text tool on a <tspan> reopens the text
+ # clicking with text tool on a <tspan> reopens the text
   ? and places the cursor where you clicked
  - arbitrary color picker
  - better pan/zoom controls
@@ -31,6 +31,7 @@
  # clicking on an object in select mode also selects objects in its bounding box?!
  # anchor selection when switching away from selection/copy tools
  # cursor hotspots
+ # don't add empty <text>s
  - compensate for scrollwheel zoom chunkiness/directionality differences among different browsers/scrolling devices
  - make the zoom level indicator take less horizontal space
  - let selectRect expand in any direction, not just down+right

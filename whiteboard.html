@@ -314,6 +314,19 @@ function getEventCoordsRelativeToDoc(e) {
   return docCoords;
 }
 
+function getDocCoordsRelativeToPage(docCoords) {
+  if (!(docCoords instanceof SVGPoint)) {
+    var point = svg.createSVGPoint();
+    point.x = docCoords.x;
+    point.y = docCoords.y;
+    docCoords = point;
+  }
+  var transforms = doc.transform.animVal;
+  var m = transforms.getItem(0).matrix.multiply(transforms.getItem(1).matrix);
+  var pageCoords = docCoords.matrixTransform(m);
+  return pageCoords;
+}
+
 function copyDocTransformToSelection() {
   selection.setAttribute("transform", doc.getAttribute("transform"));
 }
@@ -328,37 +341,75 @@ function anchorSelection() {
   }
 }
 
+function newTextInput(pageCoords) {
+  textToolInput.setAttribute('style',
+    'left: ' + pageCoords.x + 'px; ' +
+    'top: ' + pageCoords.y + 'px; ' +
+    'font-size: ' + (parseInt(currentSize) + 7) + 'pt; ' +
+    'color: ' + currentColor + ';'
+  );
+  textToolInput.focus();
+}
+
 function dismissTextInput() {
   // clear the input and hide it
   textToolInput.value = '';
   textToolInput.setAttribute('style', 'display: none;');
 }
 
-// convert the value of textToolInput to an SVG text node
+// convert the value of textToolInput to an SVG text node, unless it's empty,
+// and then dismiss textToolInput
 function finishTextInput() {
   var val = textToolInput.value;
-  var style = textToolInput.style;
-  var pageCoords = {
-    pageX: parseInt(style.getPropertyValue('left').replace(/px$/,'')),
-    pageY: parseInt(style.getPropertyValue('top').replace(/px$/,'')),
-  };
-  docCoords = getEventCoordsRelativeToDoc(pageCoords);
-  var text = document.createElementNS(svgNS, 'text');
-  text.setAttribute('transform', 'translate(' + docCoords.x + ', ' + docCoords.y + ')');
-  text.setAttribute('style',
-    'font-size: ' + style.getPropertyValue('font-size') + '; ' +
-    'fill: ' + style.getPropertyValue('color') + ';'
-  );
-  var lines = val.split("\n");
-  for (var i = 0; i < lines.length; i++) {
-    var tspan = document.createElementNS(svgNS, 'tspan');
-    tspan.setAttribute('x', 0);
-    tspan.setAttribute('dy', '1em');
-    tspan.appendChild(document.createTextNode(lines[i]));
-    text.appendChild(tspan);
+  if (val != '') {
+    // add a text element in the same place, with a tspan for each line of val
+    var style = textToolInput.style;
+    var pageCoords = {
+      pageX: parseInt(style.getPropertyValue('left').replace(/px$/,'')),
+      pageY: parseInt(style.getPropertyValue('top').replace(/px$/,'')),
+    };
+    docCoords = getEventCoordsRelativeToDoc(pageCoords);
+    var text = document.createElementNS(svgNS, 'text');
+    text.setAttribute('transform', 'translate(' + docCoords.x + ', ' + docCoords.y + ')');
+    text.setAttribute('style',
+      'font-size: ' + style.getPropertyValue('font-size') + '; ' +
+      'fill: ' + style.getPropertyValue('color') + ';'
+    );
+    var lines = val.split("\n");
+    for (var i = 0; i < lines.length; i++) {
+      var tspan = document.createElementNS(svgNS, 'tspan');
+      tspan.setAttribute('x', 0);
+      tspan.setAttribute('dy', '1em');
+      tspan.appendChild(document.createTextNode(lines[i]));
+      text.appendChild(tspan);
+    }
+    doc.appendChild(text);
   }
-  doc.appendChild(text);
   dismissTextInput();
+}
+
+function reopenTextInput(tspan) {
+  var text = getDocChild(tspan);
+  var tspans = text.childNodes;
+  var lines = [];
+  for (var i = tspans.length; i >= 0; i--) {
+    if (tspans[i] instanceof SVGTSpanElement) {
+      lines.push(tspans[i].innerHTML);
+    }
+  }
+  lines.reverse();
+  textToolInput.value = lines.join("\n");
+  var style = textToolInput.style;
+  style.setProperty('font-size', text.style.getPropertyValue('font-size'));
+  style.setProperty('color', text.style.getPropertyValue('fill'));
+  var translateMatrix = text.transform.baseVal.getItem(0).matrix;
+  var docCoords = { x: translateMatrix.e, y: translateMatrix.f };
+  var pageCoords = getDocCoordsRelativeToPage(docCoords);
+  style.setProperty('left', pageCoords.x + 'px');
+  style.setProperty('top', pageCoords.y + 'px');
+  doc.removeChild(text);
+  show(textToolInput);
+  textToolInput.focus();
 }
 
 function removeAllChildren(node) {
@@ -557,18 +608,17 @@ var tools = {
   },
   text: {
     onclick: function(e, docCoords) {
-      if (textToolInput.style.display == 'none') {
-	// textToolInput not displayed, so display it at the cursor and focus
-	textToolInput.setAttribute('style',
-	  'left: ' + e.pageX + 'px; ' +
-	  'top: ' + e.pageY + 'px; ' +
-	  'font-size: ' + (parseInt(currentSize) + 7) + 'pt; ' +
-	  'color: ' + currentColor + ';'
-	);
-	textToolInput.focus();
-      } else {
-	// textToolInput already displayed, so finalize it into an SVG text
-	finishTextInput();
+      if (e.target instanceof SVGTSpanElement) { // clicked on a previous text
+	if (!isHidden(textToolInput)) { // finish the current one if needed
+	  finishTextInput();
+	}
+	reopenTextInput(e.target);
+      } else { // click was not on a previous text
+	if (isHidden(textToolInput)) { // no active text input
+	  newTextInput({ x: e.pageX, y: e.pageY });
+	} else { // active text input
+	  finishTextInput();
+	}
       }
     }
   }
