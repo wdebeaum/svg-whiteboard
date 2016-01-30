@@ -8,7 +8,16 @@
   # save: make data URI from document.outerHTML, put it in a link with a content-disposition that makes the browser save it instead of loading it again
    - export: make a data URI for just the doc without the UI 
    ? also export to PNG using the canvas trick I used for cursors
-  - settings: ??? profit
+  - settings:
+   - pan/zoom inversion/chunk size
+    ? calibration boxes
+   - collaboration settings
+   ? colors in palette
+   ? fisheye border
+    - enabled
+    - border thickness
+    - fisheye scaling amount
+    ? preview
   ? about/help
  - undo/redo list
  - collaboration via WebRTC/STUN/TURN/ICE/acronym-of-the-week
@@ -32,6 +41,7 @@
  # anchor selection when switching away from selection/copy tools
  # cursor hotspots
  # don't add empty <text>s
+ - apply zoom to textToolInput
  - compensate for scrollwheel zoom chunkiness/directionality differences among different browsers/scrolling devices
  - make the zoom level indicator take less horizontal space
  - let selectRect expand in any direction, not just down+right
