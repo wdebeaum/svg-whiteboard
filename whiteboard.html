@@ -106,6 +106,16 @@ text {
 .popup {
   filter: url('#fat-outline');
 }
+div.popup {
+  position: absolute;
+  left: 64px; top: 64px; bottom: 64px; right: 64px;
+  padding: 1em;
+  background-color: #ddd;
+  border: 1px solid black;
+  font-family: Symbola;
+  overflow: auto;
+  filter: none; /* work around bug in Firefox */
+}
 </style>
 <script type="text/javascript">
 function show(elem) {
@@ -226,6 +236,7 @@ var selectRect = undefined;
 var zoomFactor = undefined;
 var iconStyle = undefined;
 var textToolInput = undefined;
+var helpWindow = undefined;
 var currentTool = 'draw';
 var currentSize = 5;
 var currentColor = '#00c';
@@ -747,6 +758,7 @@ window.onload = function() {
   zoomFactor = document.getElementById("zoom-factor");
   iconStyle = document.getElementById('icon-style').outerHTML;
   textToolInput = document.getElementById('text-tool-input');
+  helpWindow = document.getElementById("help-window");
   var menu = document.getElementById("menu");
   hide(menu);
   var menuButton = document.getElementById("menu-button");
@@ -817,6 +829,13 @@ window.onload = function() {
     fileOutput.click();
     // restore cursor
     svg.setAttribute('style', oldStyle);
+  };
+  var helpButton = document.getElementById("help-button");
+  helpButton.onclick = function(e) {
+    e.stopPropagation();
+    toggleButtonClickedness(menuButton);
+    toggleDisplay(menu);
+    show(helpWindow);
   };
   var mainToolbar = document.getElementById("main-toolbar");
   forEachToolbarButton(mainToolbar, function(button) {
@@ -1135,4 +1154,9 @@ window.onload = function() {
   </g>
  </g>
 </svg>
+<div id="help-window" class="popup" style="display: none;">
+ <h1>SVG Whiteboard</h1>
+ <p>Written by William de Beaumont</p>
+ <button onclick="hide(helpWindow)">dismiss</button>
+</div>
 </body></html>
