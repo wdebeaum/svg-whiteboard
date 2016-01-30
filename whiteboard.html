@@ -11,6 +11,16 @@
   font-family: Symbola;
   font-size: 16pt;
   cursor: pointer;
+  shape-rendering: crispEdges;
+}
+.cursor {
+  filter: url(#outline);
+}
+.cursor #select-icon {
+  fill: none;
+  stroke: black;
+  stroke-width: 1px;
+  stroke-dasharray: 3px,2px;
 }
 </style>
 <style type="text/css">
@@ -57,6 +67,7 @@ circle.clicked.icon {
   stroke: black;
   stroke-width: 1px;
   cursor: pointer;
+  shape-rendering: crispEdges;
 }
 .unclicked.frame {
   fill: #ddd;
@@ -93,7 +104,7 @@ text {
   filter: url('#shadow');
 }
 .popup {
-  filter: url('#shadow');
+  filter: url('#fat-outline') url('#shadow');
 }
 </style>
 <script type="text/javascript">
@@ -280,13 +291,9 @@ function iconToCursor(iconId, callback) {
     iconStyle +
     // ... but it also means we have an opportunity to put filter effects on
     // the icon like this
-    '<filter id="outline" filterUnits="userSpaceOnUse" x="-10%" y="-10%" width="120%" height="120%">' +
-    '<feMorphology result="dilation" in="SourceAlpha" operator="dilate" radius="1" />' +
-    '<feColorMatrix result="whiteDilation" in="dilation" type="matrix" values="-1 0 0 0 1  0 -1 0 0 1  0 0 -1 0 1  0 0 0 1 0" />' +
-    '<feBlend in="SourceGraphic" in2="whiteDilation" mode="normal" />' +
-    '</filter>' +
+    document.getElementById('outline').outerHTML +
     '</defs>' +
-    '<g style="filter: url(#outline);">' +
+    '<g class="cursor">' +
     iconDef.outerHTML +
     '</g>' +
     '</svg>';
@@ -925,6 +932,17 @@ window.onload = function() {
    <feGaussianBlur result="blur" in="offset" stdDeviation="3"></feGaussianBlur>
    <feBlend in="SourceGraphic" in2="blur" mode="normal"></feBlend>
   </filter>
+  <filter id="outline" filterUnits="userSpaceOnUse" x="-10%" y="-10%" width="120%" height="120%">
+   <feMorphology result="dilation" in="SourceAlpha" operator="dilate" radius="1"></feMorphology>
+   <feColorMatrix result="whiteDilation" in="dilation" type="matrix" values="-1 0 0 0 1  0 -1 0 0 1  0 0 -1 0 1  0 0 0 1 0"></feColorMatrix>
+   <feBlend in="SourceGraphic" in2="whiteDilation" mode="normal"></feBlend>
+  </filter>
+  <filter id="fat-outline" filterUnits="userSpaceOnUse" x="-10%" y="-10%" width="120%" height="120%">
+   <feMorphology result="dilation" in="SourceAlpha" operator="dilate" radius="5"></feMorphology>
+   <feColorMatrix result="whiteDilation" in="dilation" type="matrix" values="-1 0 0 0 1  0 -1 0 0 1  0 0 -1 0 1  0 0 0 1 0"></feColorMatrix>
+   <feGaussianBlur result="blur" in="whiteDilation" stdDeviation="3"></feGaussianBlur>
+   <feBlend in="SourceGraphic" in2="blur" mode="normal"></feBlend>
+  </filter>
   <rect id="icon-frame" x="0" y="0" width="32" height="32"></rect>
   <text id="move-icon" class="icon" x="1px" y="2ex">
    <tspan>←</tspan><tspan dx="-0.5em">→</tspan><tspan dx="-1em" dy="-0.5ex">↑</tspan><tspan dx="-1ex" dy="1ex">↓</tspan>
@@ -981,11 +999,11 @@ window.onload = function() {
     <use xlink:href="#icon-frame" class="unclicked frame"></use>
     <use xlink:href="#open-icon" class="unclicked icon"></use>
    </g>
-   <g id="save-button" transform="translate(48,114)">
+   <g id="save-button" transform="translate(48,112)">
     <use xlink:href="#icon-frame" class="unclicked frame"></use>
     <use xlink:href="#save-icon" class="unclicked icon"></use>
    </g>
-   <g id="settings-button" transform="translate(48,146)">
+   <g id="settings-button" transform="translate(48,144)">
     <use xlink:href="#icon-frame" class="unclicked frame"></use>
     <use xlink:href="#settings-icon" class="unclicked icon"></use>
    </g>

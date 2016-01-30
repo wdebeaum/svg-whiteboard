@@ -45,6 +45,6 @@
  - compensate for scrollwheel zoom chunkiness/directionality differences among different browsers/scrolling devices
  - make the zoom level indicator take less horizontal space
  - let selectRect expand in any direction, not just down+right
- - don't fill selection cursor (or come up with a different cursor)
+ # don't fill selection cursor (or come up with a different cursor)
  ? trashcan vs. eraser
  # lots of refactoring
