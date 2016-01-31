@@ -618,6 +618,7 @@ var tools = {
   },
   copy: {
     ondocmousedown: function(e) {
+      anchorSelection();
       var o = getDocChild(e.target);
       var copy = o.cloneNode(true);
       selection.appendChild(copy);
