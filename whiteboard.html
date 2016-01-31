@@ -755,21 +755,30 @@ function onclick(e) {
 function onwheel(e) {
   e.stopPropagation(e);
   var docCoords = getEventCoordsRelativeToDoc(e);
-  var delta = { x: e.deltaX, y: e.deltaY, z: e.deltaZ };
-  console.log('deltaMode = ' + e.deltaMode + '; deltaY = ' + JSON.stringify(e.deltaY) + '; delta = ' + JSON.stringify(delta) + '; wheelDelta = ' + JSON.stringify(e.wheelDelta) + '; detail = ' + JSON.stringify(e.detail));
-  if (e.deltaMode != WheelEvent.DOM_DELTA_PIXEL) {
-    delta.x *= 16;
-    delta.y *= 16;
-    delta.z *= 16;
+  var delta = { x: e.deltaX, y: e.deltaY }; // TODO use Z to zoom? I don't have a device that makes Z != 0
+  switch (e.deltaMode) {
+    case WheelEvent.DOM_DELTA_PIXEL: // Chrome
+      // lean back and accept Chrome's crazy scroll unit of 53, because maybe
+      // the user is using a device that isn't chunky
+      break;
+    case WheelEvent.DOM_DELTA_LINE: // Firefox
+      // convert FF's 3-line scrolling to Chrome's 53-pixel scrolling
+      delta.y = delta.y * 53.0 / 3;
+      // FF only does 1-"line" horizontal scrolling
+      delta.x *= 53;
+      break;
+    case WheelEvent.DOM_DELTA_PAGE: // ???
+      // make an attempt to interpret this literally
+      var pageDims = svg.getBoundingClientRect();
+      delta.x *= pageDims.width;
+      delta.y *= pageDims.height;
+      break;
   }
   console.log(delta.x + ' ' + delta.y);
   if (/^zoom-/.test(currentTool)) {
-    // for some reason y is in chunks of 53 in Chrome, and 48 in Firefox?
     zoomRelative(Math.pow(2, -delta.y / 53), docCoords);
   } else {
-    // ... also x is in chunks of 53 and 16, respectively.
     panRelative(delta);
-    // TODO use z to zoom?
   }
 }
 
