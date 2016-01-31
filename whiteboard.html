@@ -756,6 +756,7 @@ function onwheel(e) {
   e.stopPropagation(e);
   var docCoords = getEventCoordsRelativeToDoc(e);
   var delta = { x: e.deltaX, y: e.deltaY, z: e.deltaZ };
+  console.log('deltaMode = ' + e.deltaMode + '; deltaY = ' + JSON.stringify(e.deltaY) + '; delta = ' + JSON.stringify(delta) + '; wheelDelta = ' + JSON.stringify(e.wheelDelta) + '; detail = ' + JSON.stringify(e.detail));
   if (e.deltaMode != WheelEvent.DOM_DELTA_PIXEL) {
     delta.x *= 16;
     delta.y *= 16;
