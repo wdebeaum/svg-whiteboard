@@ -42,6 +42,7 @@
  # cursor hotspots
  # don't add empty <text>s
  - apply zoom to textToolInput
+ ? make new open a new tab/window with a blank document (using data URI) instead of clearing the current document
  - compensate for scrollwheel zoom chunkiness/directionality differences among different browsers/scrolling devices
  - make the zoom level indicator take less horizontal space
  # let selectRect expand in any direction, not just down+right
