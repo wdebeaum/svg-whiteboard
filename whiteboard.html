@@ -36,15 +36,15 @@ html, body, svg {
 circle.clicked.icon {
   fill: white;
 }
-#select-icon-use {
+.select-icon-use {
   fill: none;
   stroke-width: 1px;
   stroke-dasharray: 3px,2px;
 }
-#select-icon-use.unclicked.icon {
+.select-icon-use.unclicked.icon {
   stroke: black;
 }
-#select-icon-use.clicked.icon {
+.select-icon-use.clicked.icon {
   stroke: white;
 }
 #select-rect {
@@ -115,6 +115,17 @@ div.popup {
   font-family: Symbola;
   overflow: auto;
   filter: none; /* work around bug in Firefox */
+}
+dt {
+  font-weight: bold;
+}
+.inline {
+  display: inline;
+}
+.inline.icon {
+  font-weight: normal;
+  width: 32px;
+  height: 32px;
 }
 </style>
 <script type="text/javascript">
@@ -1053,7 +1064,7 @@ window.onload = function() {
    <g transform="translate(0,192)">
     <title>select groups of objects and then move them, change their properties, or delete them</title>
     <use xlink:href="#icon-frame" class="unclicked frame"></use>
-    <use xlink:href="#select-icon" class="unclicked icon" id="select-icon-use"></use>
+    <use xlink:href="#select-icon" class="unclicked icon select-icon-use"></use>
    </g>
    <g transform="translate(0,224)">
     <title>copy objects or selected groups of objects, by dragging</title>
@@ -1156,7 +1167,52 @@ window.onload = function() {
 </svg>
 <div id="help-window" class="popup" style="display: none;">
  <h1>SVG Whiteboard</h1>
- <p>Written by William de Beaumont</p>
+ <p>Written by <a href="http://www.uofr.net/~willdb/">William de Beaumont</a></p>
+ <p>SVG Whiteboard is a simple drawing application written as a standalone webpage. It requires no external resources besides a reasonably modern web browser. So you can download it, and use it from your own computer without even being connected to the Internet. You can save your work to a file on your computer, and that file will also contain the complete application. If you send that file to someone else, they will be able to open and edit it in the same way you did: with just a web browser.</p>
+ <h2>Tools</h2>
+ <p>Along the left side (not counting the menu button at the top), there are tools you can use to draw, edit what you've drawn, and navigate your (infinite) whiteboard. Only one of these tools is active at a time; it will appear in white on a black background, and your pointer will change to become its icon. The tools are:</p>
+ <dl>
+  <dt><svg class="inline icon"><use xlink:href="#draw-icon"></use></svg> draw
+   <dd>Draw freehand lines by dragging your pointer.
+  <dt><svg class="inline icon"><use xlink:href="#text-icon"></use></svg> text
+   <dd>Click where you want the text to start, and type. Click elsewhere to finish. You can also click on a previously added piece of text to re-open it.
+  <dt><svg class="inline icon"><use xlink:href="#connect-icon"></use></svg> connect (WIP)
+   <dd>Will let you connect existing objects (drawn lines or texts) with straight arrows, which will move along with the objects they are connected to. <em>Not yet implemented.</em>
+  <dt><svg class="inline icon select-icon-use unclicked"><use xlink:href="#select-icon"></use></svg> select
+   <dd>Click on an object to select only that object, or drag a box around a group of objects to select all of them. Selected objects will have a drop shadow. Drag any selected object to move the whole selection.
+  <dt><svg class="inline icon"><use xlink:href="#copy-icon"></use></svg> copy
+   <dd>Drag from an object (or the selection) to make a copy of that object and move it to where you want it.
+  <dt><svg class="inline icon"><use xlink:href="#move-icon"></use></svg> pan
+   <dd>Drag to move the whiteboard itself. It is practically infinite in size, so you can always find more space to draw on this way. You can also pan using your mouse's scrollwheel or trackpad's scroll gestures, with any tool except zoom in/out.
+  <dt><svg class="inline icon"><use xlink:href="#zoom-in-icon"></use></svg> zoom in / <svg class="inline icon"><use xlink:href="#zoom-out-icon"></use></svg> zoom out
+   <dd>Click to zoom in or out (depending on which tool is active) by a factor of 2. You can also scroll up/down to zoom in/out with either tool active. The current zoom factor is displayed between the two tools.
+ </dl>
+ <h2>Properties</h2>
+ <p>Along the top, there are buttons for choosing values for two properties:</p>
+ <dl>
+  <dt>size
+   <dd>The size of the pen used for drawing freehand lines or connecting arrows. This also controls the font size used for typed text (but not the size of the pen used to draw the lines that make up the text).
+  <dt>color
+   <dd>The color used for drawing lines, text, and connecting arrows.
+ </dl>
+ <p>If you change one of these properties after selecting objects with the select tool, those objects will be updated to reflect the new property value you chose. For example, if you selected a thin blue line, and then chose a thicker pen size, that line would then be a thick blue line. If you then chose the red pen color, the line would turn red.</p>
+ <p>There is one more button, to the right of the properties buttons: delete. If you choose delete, any objects you have selected will be deleted from the whiteboard.</p>
+ <h2>Menu</h2>
+ <p>If you're reading this, you've probably already found the menu button in the top left corner. It has these items to choose from:</p>
+ <dl>
+  <dt>New
+   <dd>Deletes everything from the whiteboard. Save first if you want to keep your previous drawing!
+  <dt>Open...
+   <dd>Lets you load the contents of a whiteboard you previously saved. Loading the file directly into your web browser will have essentially the same effect.
+  <dt>Save...
+   <dd>Lets you save the whiteboard (both the contents <em>and the application itself</em>) to your computer.
+  <dt>Settings... (WIP)
+   <dd>Will let you adjust settings related to the operation of this application. <em>Not yet implemented.</em>
+  <dt>Help...
+   <dd>Displays this help window. Click the "dismiss" button to get rid of it again.
+ </dl>
+ <h2>Technowledgements</h2>
+ <p>SVG Whiteboard was written using <a href="http://www.w3.org/Graphics/SVG/">SVG</a> (natch) embedded in <a href="http://www.w3.org/TR/html5/">HTML5</a>, and makes good use of <a href="https://www.w3.org/Style/CSS/">CSS</a>, <a href="http://www.ecmascript.org/">ECMAScript (aka JavaScript)</a>, <a href="http://tools.ietf.org/html/rfc2397">Data URIs</a>, the <a href="https://www.w3.org/TR/FileAPI/">File API</a>, and <a href="http://www.unicode.org/">Unicode</a>. It also embeds an excerpt of the <a href="http://users.teilar.gr/~g1951d/">Symbola</a> font (as a data URI). The full font has glyphs for practically all the symbols in Unicode, and is "free for any use". I use just the ASCII part plus glyphs for most of the tool and menu icons in this application.</p>
  <button onclick="hide(helpWindow)">dismiss</button>
 </div>
 </body></html>
