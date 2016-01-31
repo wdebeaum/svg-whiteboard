@@ -4,7 +4,7 @@
  - menu items
   # new: just clear everything in doc and selection
   # open: load file and copy everything under doc-and-selection
-   - import: load file and put its contents in the selection
+   # import: load file and put its contents in the selection
   # save: make data URI from document.outerHTML, put it in a link with a content-disposition that makes the browser save it instead of loading it again
    - export: make a data URI for just the doc without the UI 
    ? also export to PNG using the canvas trick I used for cursors

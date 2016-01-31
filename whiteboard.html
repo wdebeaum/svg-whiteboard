@@ -85,18 +85,9 @@ text {
   -ms-user-select: none;
   user-select: none;
 }
-#cursor-canvas {
-  display: none;
-}
 #text-tool-input {
   font-family: Symbola;
   position: absolute;
-}
-#file-input {
-  display: none;
-}
-#file-output {
-  display: none;
 }
 #doc-and-selection path {
   fill: none;
@@ -130,6 +121,9 @@ dt {
   width: 32px;
   height: 32px;
   vertical-align: middle;
+}
+.invisible {
+  display: none;
 }
 </style>
 <script type="text/javascript">
@@ -243,6 +237,7 @@ function makeToolbarUnclicked(elem) {
 }
 
 var svgNS = "http://www.w3.org/2000/svg";
+var xlinkNS = "http://www.w3.org/1999/xlink";
 var svg = undefined;
 var docAndSelection = undefined;
 var doc = undefined;
@@ -838,6 +833,44 @@ window.onload = function() {
     };
     reader.readAsText(file);
   };
+  var importButton = document.getElementById("import-button");
+  var importInput = document.getElementById("import-input");
+  importButton.onclick = function(e) {
+    e.stopPropagation();
+    toggleButtonClickedness(menuButton);
+    toggleDisplay(menu);
+    importInput.click();
+  };
+  importInput.onchange = function(e) {
+    var file = importInput.files[0];
+    console.log("importing file " + file.name);
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var uri = e.target.result;
+      var imageElement = document.createElementNS(svgNS, 'image');
+      // also need to load the image into an Image to get its natural dimensions
+      var imageObject = new Image();
+      imageObject.onload = function() {
+	anchorSelection();
+	// center the image in the current view
+	var pageDims = svg.getBoundingClientRect();
+	var pageCoords = {
+	  pageX: (pageDims.width - imageObject.naturalWidth) / 2,
+	  pageY: (pageDims.height - imageObject.naturalHeight) / 2
+	};
+	var docCoords = getEventCoordsRelativeToDoc(pageCoords);
+	imageElement.setAttribute('x', docCoords.x);
+	imageElement.setAttribute('y', docCoords.y);
+	imageElement.setAttribute('width', imageObject.naturalWidth);
+	imageElement.setAttribute('height', imageObject.naturalHeight);
+	imageElement.setAttributeNS(xlinkNS, 'href', uri);
+	selection.appendChild(imageElement);
+	console.log("finished importing file " + file.name);
+      };
+      imageObject.src = uri;
+    };
+    reader.readAsDataURL(file);
+  };
   var saveButton = document.getElementById("save-button");
   saveButton.onclick = function(e) {
     e.stopPropagation();
@@ -968,10 +1001,11 @@ window.onload = function() {
 </script>
 </head>
 <body>
-<canvas id="cursor-canvas" width="32" height="32"></canvas>
+<canvas id="cursor-canvas" class="invisible" width="32" height="32"></canvas>
 <textarea id="text-tool-input" style="display: none;" placeholder="Enter text here and click elsewhere when done."></textarea>
-<input id="file-input" type="file">
-<a id="file-output" download="whiteboard.html">whiteboard.html</a>
+<input id="file-input" class="invisible" type="file">
+<input id="import-input" class="invisible" type="file">
+<a id="file-output" class="invisible" download="whiteboard.html">whiteboard.html</a>
 <svg>
  <defs>
   <filter id="shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">
