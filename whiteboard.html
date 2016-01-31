@@ -1172,43 +1172,43 @@ window.onload = function() {
  <h2>Tools</h2>
  <p>Along the left side (not counting the menu button at the top), there are tools you can use to draw, edit what you've drawn, and navigate your (infinite) whiteboard. Only one of these tools is active at a time; it will appear in white on a black background, and your pointer will change to become its icon. The tools are:</p>
  <dl>
-  <dt><svg class="inline icon"><use xlink:href="#draw-icon"></use></svg> draw
+  <dt><svg class="inline icon"><use xlink:href="#draw-icon"></use></svg> Draw
    <dd>Draw freehand lines by dragging your pointer.
-  <dt><svg class="inline icon"><use xlink:href="#text-icon"></use></svg> text
+  <dt><svg class="inline icon"><use xlink:href="#text-icon"></use></svg> Text
    <dd>Click where you want the text to start, and type. Click elsewhere to finish. You can also click on a previously added piece of text to re-open it.
-  <dt><svg class="inline icon"><use xlink:href="#connect-icon"></use></svg> connect (WIP)
+  <dt><svg class="inline icon"><use xlink:href="#connect-icon"></use></svg> Connect (WIP)
    <dd>Will let you connect existing objects (drawn lines or texts) with straight arrows, which will move along with the objects they are connected to. <em>Not yet implemented.</em>
-  <dt><svg class="inline icon select-icon-use unclicked"><use xlink:href="#select-icon"></use></svg> select
+  <dt><svg class="inline icon select-icon-use unclicked"><use xlink:href="#select-icon"></use></svg> Select
    <dd>Click on an object to select only that object, or drag a box around a group of objects to select all of them. Selected objects will have a drop shadow. Drag any selected object to move the whole selection.
-  <dt><svg class="inline icon"><use xlink:href="#copy-icon"></use></svg> copy
+  <dt><svg class="inline icon"><use xlink:href="#copy-icon"></use></svg> Copy
    <dd>Drag from an object (or the selection) to make a copy of that object and move it to where you want it.
-  <dt><svg class="inline icon"><use xlink:href="#move-icon"></use></svg> pan
+  <dt><svg class="inline icon"><use xlink:href="#move-icon"></use></svg> Pan
    <dd>Drag to move the whiteboard itself. It is practically infinite in size, so you can always find more space to draw on this way. You can also pan using your mouse's scrollwheel or trackpad's scroll gestures, with any tool except zoom in/out.
-  <dt><svg class="inline icon"><use xlink:href="#zoom-in-icon"></use></svg> zoom in / <svg class="inline icon"><use xlink:href="#zoom-out-icon"></use></svg> zoom out
+  <dt><svg class="inline icon"><use xlink:href="#zoom-in-icon"></use></svg> Zoom in / <svg class="inline icon"><use xlink:href="#zoom-out-icon"></use></svg> Zoom out
    <dd>Click to zoom in or out (depending on which tool is active) by a factor of 2. You can also scroll up/down to zoom in/out with either tool active. The current zoom factor is displayed between the two tools.
  </dl>
  <h2>Properties</h2>
  <p>Along the top, there are buttons for choosing values for two properties:</p>
  <dl>
-  <dt>size
+  <dt><svg class="inline icon"><circle cx="16" cy="16" r="5" class="unclicked icon"></circle></svg> Size
    <dd>The size of the pen used for drawing freehand lines or connecting arrows. This also controls the font size used for typed text (but not the size of the pen used to draw the lines that make up the text).
-  <dt>color
+  <dt><svg class="inline icon"><circle cx="16" cy="16" r="10" class="unclicked color" fill="#00c"></circle></svg> Color
    <dd>The color used for drawing lines, text, and connecting arrows.
  </dl>
  <p>If you change one of these properties after selecting objects with the select tool, those objects will be updated to reflect the new property value you chose. For example, if you selected a thin blue line, and then chose a thicker pen size, that line would then be a thick blue line. If you then chose the red pen color, the line would turn red.</p>
- <p>There is one more button, to the right of the properties buttons: delete. If you choose delete, any objects you have selected will be deleted from the whiteboard.</p>
+ <p>There is one more button, to the right of the properties buttons: <svg class="inline icon"><use xlink:href="#delete-icon"></use></svg> <b>Delete</b>. If you choose delete, any objects you have selected will be deleted from the whiteboard.</p>
  <h2>Menu</h2>
  <p>If you're reading this, you've probably already found the menu button in the top left corner. It has these items to choose from:</p>
  <dl>
-  <dt>New
+  <dt><svg class="inline icon"><use xlink:href="#new-icon"></use></svg> New
    <dd>Deletes everything from the whiteboard. Save first if you want to keep your previous drawing!
-  <dt>Open...
+  <dt><svg class="inline icon"><use xlink:href="#open-icon"></use></svg> Open...
    <dd>Lets you load the contents of a whiteboard you previously saved. Loading the file directly into your web browser will have essentially the same effect.
-  <dt>Save...
+  <dt><svg class="inline icon"><use xlink:href="#save-icon"></use></svg> Save...
    <dd>Lets you save the whiteboard (both the contents <em>and the application itself</em>) to your computer.
-  <dt>Settings... (WIP)
+  <dt><svg class="inline icon"><use xlink:href="#settings-icon"></use></svg> Settings... (WIP)
    <dd>Will let you adjust settings related to the operation of this application. <em>Not yet implemented.</em>
-  <dt>Help...
+  <dt><svg class="inline icon"><use xlink:href="#help-icon"></use></svg> Help...
    <dd>Displays this help window. Click the "dismiss" button to get rid of it again.
  </dl>
  <h2>Technowledgements</h2>
