@@ -18,7 +18,7 @@
     - border thickness
     - fisheye scaling amount
     ? preview
-  ? about/help
+  # about/help
  - undo/redo list
  - collaboration via WebRTC/STUN/TURN/ICE/acronym-of-the-week
   ? with A/V/text chat inset
@@ -44,7 +44,7 @@
  - apply zoom to textToolInput
  - compensate for scrollwheel zoom chunkiness/directionality differences among different browsers/scrolling devices
  - make the zoom level indicator take less horizontal space
- - let selectRect expand in any direction, not just down+right
+ # let selectRect expand in any direction, not just down+right
  # don't fill selection cursor (or come up with a different cursor)
  ? trashcan vs. eraser
  # lots of refactoring

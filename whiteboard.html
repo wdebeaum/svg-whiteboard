@@ -244,6 +244,7 @@ var docAndSelection = undefined;
 var doc = undefined;
 var selection = undefined;
 var selectRect = undefined;
+var selectRectStart = undefined;
 var zoomFactor = undefined;
 var iconStyle = undefined;
 var textToolInput = undefined;
@@ -368,6 +369,15 @@ function anchorSelection() {
     selection.removeChild(c);
     doc.appendChild(c);
   }
+}
+
+function updateSelectRect() {
+  selectRect.setAttribute('x', Math.min(selectRectStart.x, selectRectEnd.x));
+  selectRect.setAttribute('y', Math.min(selectRectStart.y, selectRectEnd.y));
+  selectRect.setAttribute('width',
+    Math.abs(selectRectEnd.x - selectRectStart.x));
+  selectRect.setAttribute('height',
+    Math.abs(selectRectEnd.y - selectRectStart.y));
 }
 
 function newTextInput(pageCoords) {
@@ -567,12 +577,11 @@ var tools = {
   select: {
     onmousedown: function(e, docCoords) {
       anchorSelection();
+      selectRectStart = { x: e.pageX, y: e.pageY };
+      selectRectEnd = { x: e.pageX, y: e.pageY };
       // set coordinates of selectRect and make it visible
-      selectRect.setAttribute('x', e.pageX);
-      selectRect.setAttribute('y', e.pageY);
-      selectRect.setAttribute('width', 0);
-      selectRect.setAttribute('height', 0);
-      selectRect.setAttribute('style', '');
+      updateSelectRect();
+      show(selectRect);
       draggedObject = selectRect;
     },
     ondocmousedown: function(e) {
@@ -587,8 +596,9 @@ var tools = {
     },
     onmousemove: function(e, currentMovement) {
       if (draggedObject === selectRect) {
-	draggedObject.width.baseVal.value += currentMovement.x;
-	draggedObject.height.baseVal.value += currentMovement.y;
+	selectRectEnd.x += currentMovement.x;
+	selectRectEnd.y += currentMovement.y;
+	updateSelectRect();
       } else { // dragging selected objects
         moveSelectedObjects(currentMovement);
       }
@@ -600,7 +610,9 @@ var tools = {
 	  doc.removeChild(enclosed[i]);
 	  selection.appendChild(enclosed[i]);
 	}
-	selectRect.setAttribute('style', 'display: none;');
+	hide(selectRect);
+	selectRectStart = undefined;
+	selectRectEnd = undefined;
       }
     }
   },
