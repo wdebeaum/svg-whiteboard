@@ -665,35 +665,13 @@ var tools = {
   }
 };
 
-// TODO collapse these very similar event handlers
-
-function onmousedown(e) {
+function onMouseDownOrClick(handlerName, e) {
   if (!mouseIsOverUI) {
-    var fn = tools[currentTool].onmousedown;
+    var fn = tools[currentTool][handlerName];
     if (fn) {
       var docCoords = getEventCoordsRelativeToDoc(e);
       e.stopPropagation();
       fn(e, docCoords);
-    }
-  }
-}
-
-function ondocmousedown(e) {
-  if (!mouseIsOverUI) {
-    var fn = tools[currentTool].ondocmousedown;
-    if (fn) {
-      e.stopPropagation();
-      fn(e);
-    }
-  }
-}
-
-function onselectionmousedown(e) {
-  if (!mouseIsOverUI) {
-    var fn = tools[currentTool].onselectionmousedown;
-    if (fn) {
-      e.stopPropagation();
-      fn(e);
     }
   }
 }
@@ -714,8 +692,7 @@ function tryPrefixes(obj, prop) {
   }
 }
 
-// TODO consider having separate onmousemove functions for each tool, and only
-// enabling them while the mouse button is down, to be more efficient
+// TODO consider only enabling this while the mouse button is down, to be more efficient
 function onmousemove(e) {
   if (draggedObject != null) {
     var fn = tools[currentTool].onmousemove;
@@ -738,17 +715,6 @@ function onmouseup(e) {
     var fn = tools[currentTool].onmouseup;
     if (fn) { fn(e); }
     draggedObject = null;
-  }
-}
-
-function onclick(e) {
-  if (!mouseIsOverUI) {
-    var fn = tools[currentTool].onclick;
-    if (fn) {
-      var docCoords = getEventCoordsRelativeToDoc(e);
-      e.stopPropagation();
-      fn(e, docCoords);
-    }
   }
 }
 
@@ -999,14 +965,14 @@ window.onload = function() {
     mouseIsOverUI = false;
   }
 
-  svg.onmousedown = onmousedown;
+  svg.onmousedown = onMouseDownOrClick.bind(this, 'onmousedown');
   svg.onmousemove = onmousemove;
   svg.onwheel = onwheel;
   svg.onmouseup = onmouseup;
-  svg.onclick = onclick;
+  svg.onclick = onMouseDownOrClick.bind(this, 'onclick');
   svg.ondragstart = function(e) { e.preventDefault() };
-  doc.onmousedown = ondocmousedown;
-  selection.onmousedown = onselectionmousedown;
+  doc.onmousedown = onMouseDownOrClick.bind(this, 'ondocmousedown');
+  selection.onmousedown = onMouseDownOrClick.bind(this, 'onselectionmousedown');
 }
 </script>
 </head>
@@ -1242,7 +1208,7 @@ window.onload = function() {
   <dt><svg class="inline icon"><use xlink:href="#text-icon"></use></svg> Text</dt>
    <dd>Click where you want the text to start, and type. Click elsewhere to finish. You can also click on a previously added piece of text to re-open it.</dd>
   <dt><svg class="inline icon"><use xlink:href="#connect-icon"></use></svg> Connect (WIP)</dt>
-   <dd>Will let you connect existing objects (drawn lines or texts) with straight arrows, which will move along with the objects they are connected to. <em>Not yet implemented.</em></dd>
+   <dd>Will let you connect existing objects (drawn lines, texts, or imported images) with straight arrows, which will move along with the objects they are connected to. <em>Not yet implemented.</em></dd>
   <dt><svg class="inline icon select-icon-use unclicked"><use xlink:href="#select-icon"></use></svg> Select</dt>
    <dd>Click on an object to select only that object, or drag a box around a group of objects to select all of them. Selected objects will have a drop shadow. Drag any selected object to move the whole selection.</dd>
   <dt><svg class="inline icon"><use xlink:href="#copy-icon"></use></svg> Copy</dt>
@@ -1269,8 +1235,8 @@ window.onload = function() {
    <dd>Deletes everything from the whiteboard. Save first if you want to keep your previous drawing!</dd>
   <dt><svg class="inline icon"><use xlink:href="#open-icon"></use></svg> Open...</dt>
    <dd>Lets you load the contents of a whiteboard you previously saved. Loading the file directly into your web browser will have essentially the same effect.</dd>
-  <dt><svg class="inline icon"><use xlink:href="#import-icon"></use></svg> Import... (WIP)</dt>
-   <dd>Will let you load an image file as an object to place on the whiteboard. <em>Not yet implemented</em></dd>
+  <dt><svg class="inline icon"><use xlink:href="#import-icon"></use></svg> Import...</dt>
+   <dd>Will let you load an image file as an object to place on the whiteboard.</dd>
   <dt><svg class="inline icon"><use xlink:href="#save-icon"></use></svg> Save...</dt>
    <dd>Lets you save the whiteboard (both the contents <em>and the application itself</em>) to your computer.</dd>
   <dt><svg class="inline icon"><use xlink:href="#settings-icon"></use></svg> Settings... (WIP)</dt>
