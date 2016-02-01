@@ -256,6 +256,19 @@ var deferredMovement = null;
 var dragging = false;
 var mouseIsOverUI = false;
 
+// given an element, ensure it has an ID, and return its ID
+var nextIDNumber = 0;
+function ensureID(element) {
+  while (!element.id) {
+    var nextID = 'E' + nextIDNumber;
+    nextIDNumber++;
+    if (!document.getElementById(nextID)) {
+      element.id = nextID;
+    }
+  }
+  return element.id;
+}
+
 /* like svg.checkEnclosure, but:
  *  - only check against the bounding box
  *  - assume no rotations or negative scales have been applied
@@ -516,6 +529,7 @@ function moveSelectedObjects(currentMovement) {
       cs[i].transform.baseVal.consolidate();
     }
   }
+  // TODO move unselected arrows' selected heads/tails
 }
 
 // event handlers for each tool
@@ -563,6 +577,28 @@ var tools = {
       }
       dragging = false;
       deferredMovement = null;
+    }
+  },
+  connect: {
+    ondocmousedown: function(e, docCoords) {
+      var tailID = ensureID(getDocChild(e.target));
+      var arrow;
+      // TODO create arrow
+      selection.appendChild(arrow);
+      draggedObject = arrow;
+    },
+    onmousemove: function(e, currentMovement) {
+      // TODO update arrow head position
+    },
+    onmouseup: function(e) {
+      if (e.target === doc || e.target.id == arrow.getAttribute('tail-id')) {
+	// cancel arrow if it goes nowhere or back to its tail object
+	selection.removeChild(draggedObject);
+      } else { // complete arrow
+	var headID = ensureID(getDocChild(e.target));
+	draggedObject.setAttribute('head-id', headID);
+	anchorSelection();
+      }
     }
   },
   move: {
