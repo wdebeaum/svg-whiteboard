@@ -639,6 +639,8 @@ var tools = {
       var selectionFilter = selection.parentNode;
       docAndSelection.removeChild(selectionFilter);
       docAndSelection.insertBefore(selectionFilter, doc);
+      // change cursor so hotspot is at head
+      iconToCursor('connect-dragging-icon', function(style) { svg.setAttribute('style', style); });
     },
     onmousemove: function(e, currentMovement) {
       draggedObject.x2.baseVal.value += currentMovement.x;
@@ -662,6 +664,8 @@ var tools = {
       var selectionFilter = selection.parentNode;
       docAndSelection.removeChild(selectionFilter);
       docAndSelection.appendChild(selectionFilter);
+      // change cursor back so hotspot is at tail
+      iconToCursor('connect-icon', function(style) { svg.setAttribute('style', style); });
     }
   },
   move: {
@@ -1119,7 +1123,8 @@ window.onload = function() {
   <text id="new-icon" class="icon" x="6px" y="2ex"><tspan dy="0.5ex" font-size="24pt">🗋</tspan><tspan x="3ex" dy="-0.5ex"> New</tspan></text><!-- EMPTY DOCUMENT -->
   <text id="settings-icon" class="icon" x="6px" y="2ex">⚙<tspan x="3ex"> Settings...</tspan></text>
   <text id="help-icon" class="icon" x="8px" y="2.6ex"><tspan font-size="24pt">?</tspan><tspan x="3ex" dy="-0.6ex"> Help...</tspan></text>
-  <text id="connect-icon" class="icon" x="4px" y="2ex" font-weight="bold" hotspot="24 8">↗</text>
+  <text id="connect-icon" class="icon" x="4px" y="2ex" font-weight="bold" hotspot="8 24">↗</text>
+  <text id="connect-dragging-icon" class="icon" x="4px" y="2ex" font-weight="bold" hotspot="24 8">↗</text>
   <path id="select-icon" class="icon" d="M 6 10 H 26 V 26 H 10 V 6" hotspot="10 10"></path>
   <text id="delete-icon" x="6px" y="1.75ex" font-size="24pt">🗑</text><!-- WASTEBASKET -->
   <text id="copy-icon" class="icon" x="4px" y="1.75ex" hotspot="6 6">
@@ -1314,7 +1319,7 @@ window.onload = function() {
   <dt><svg class="inline icon"><use xlink:href="#text-icon"></use></svg> Text</dt>
    <dd>Click where you want the text to start, and type. Click elsewhere to finish. You can also click on a previously added piece of text to re-open it.</dd>
   <dt><svg class="inline icon"><use xlink:href="#connect-icon"></use></svg> Connect</dt>
-   <dd>Connects existing objects (drawn lines, texts, or imported images) with straight arrows, which move along with the objects they are connected to.</dd>
+   <dd>Connects existing objects (drawn lines, texts, or imported images) with straight arrows, which move along with the objects they are connected to. Note that you start dragging using the tail of the arrow cursor, and finish with the head.</dd>
   <dt><svg class="inline icon select-icon-use unclicked"><use xlink:href="#select-icon"></use></svg> Select</dt>
    <dd>Click on an object to select only that object, or drag a box around a group of objects to select all of them. Selected objects will have a drop shadow. Drag any selected object to move the whole selection.</dd>
   <dt><svg class="inline icon"><use xlink:href="#copy-icon"></use></svg> Copy</dt>

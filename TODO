@@ -38,7 +38,7 @@
    - move doc-and-selection to defs, and use it 9 times in a grid with transforms to compress the non-center cells, and clipping
  ? allow arrows to other arrows
   > harder than other objects because movement becomes recursive
- ? make arrow cursor hotspot change from tail to head on mousedown, and back on mouseup
+ # make arrow cursor hotspot change from tail to head on mousedown, and back on mouseup
 - bugfixes
  # clicking on an object in select mode also selects objects in its bounding box?!
  # anchor selection when switching away from selection/copy tools
