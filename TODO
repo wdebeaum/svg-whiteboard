@@ -45,7 +45,7 @@
  # cursor hotspots
  # don't add empty <text>s
  # don't reverse z-order when anchoring selection
- - apply zoom to textToolInput
+ # apply zoom to textToolInput
  ? make new open a new tab/window with a blank document (using data URI) instead of clearing the current document
  # compensate for scrollwheel zoom chunkiness/directionality differences among different browsers/scrolling devices
  - make the zoom level indicator take less horizontal space

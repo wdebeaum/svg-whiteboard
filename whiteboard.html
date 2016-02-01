@@ -397,10 +397,11 @@ function updateSelectRect() {
 }
 
 function newTextInput(pageCoords) {
+  var scale = doc.transform.baseVal.getItem(1).matrix.a;
   textToolInput.setAttribute('style',
     'left: ' + pageCoords.x + 'px; ' +
     'top: ' + pageCoords.y + 'px; ' +
-    'font-size: ' + (parseInt(currentSize) + 7) + 'pt; ' +
+    'font-size: ' + ((parseInt(currentSize) + 7) * scale) + 'pt; ' +
     'color: ' + currentColor + ';'
   );
   textToolInput.focus();
@@ -426,8 +427,10 @@ function finishTextInput() {
     docCoords = getEventCoordsRelativeToDoc(pageCoords);
     var text = document.createElementNS(svgNS, 'text');
     text.setAttribute('transform', 'translate(' + docCoords.x + ', ' + docCoords.y + ')');
+    var ptSize = parseFloat(style.getPropertyValue('font-size'));
+    var scale = doc.transform.baseVal.getItem(1).matrix.a;
     text.setAttribute('style',
-      'font-size: ' + style.getPropertyValue('font-size') + '; ' +
+      'font-size: ' + (ptSize / scale) + 'pt; ' +
       'fill: ' + style.getPropertyValue('color') + ';'
     );
     var lines = val.split("\n");
@@ -455,7 +458,9 @@ function reopenTextInput(tspan) {
   lines.reverse();
   textToolInput.value = lines.join("\n");
   var style = textToolInput.style;
-  style.setProperty('font-size', text.style.getPropertyValue('font-size'));
+  var ptSize = parseFloat(text.style.getPropertyValue('font-size'));
+  var scale = doc.transform.baseVal.getItem(1).matrix.a;
+  style.setProperty('font-size', (ptSize * scale) + 'pt');
   style.setProperty('color', text.style.getPropertyValue('fill'));
   var translateMatrix = text.transform.baseVal.getItem(0).matrix;
   var docCoords = { x: translateMatrix.e, y: translateMatrix.f };
