@@ -251,6 +251,7 @@ var zoomFactor = undefined;
 var iconStyle = undefined;
 var textToolInput = undefined;
 var helpWindow = undefined;
+var settingsWindow = undefined;
 var currentTool = 'draw';
 var currentSize = 5;
 var currentColor = '#00c';
@@ -861,6 +862,7 @@ window.onload = function() {
   iconStyle = document.getElementById('icon-style').outerHTML;
   textToolInput = document.getElementById('text-tool-input');
   helpWindow = document.getElementById("help-window");
+  settingsWindow = document.getElementById("settings-window");
   var menu = document.getElementById("menu");
   hide(menu);
   var menuButton = document.getElementById("menu-button");
@@ -976,6 +978,13 @@ window.onload = function() {
     toggleButtonClickedness(menuButton);
     toggleDisplay(menu);
     show(helpWindow);
+  };
+  var settingsButton = document.getElementById("settings-button");
+  settingsButton.onclick = function(e) {
+    e.stopPropagation();
+    toggleButtonClickedness(menuButton);
+    toggleDisplay(menu);
+    show(settingsWindow);
   };
   var mainToolbar = document.getElementById("main-toolbar");
   forEachToolbarButton(mainToolbar, function(button) {
@@ -1358,5 +1367,10 @@ window.onload = function() {
  <h2>Technowledgements</h2>
  <p>SVG Whiteboard was written using <a href="http://www.w3.org/Graphics/SVG/">SVG</a> (natch) embedded in <a href="http://www.w3.org/TR/html5/">HTML5</a>, and makes good use of <a href="https://www.w3.org/Style/CSS/">CSS</a>, <a href="http://www.ecmascript.org/">ECMAScript (aka JavaScript)</a>, <a href="http://tools.ietf.org/html/rfc2397">Data URIs</a>, the <a href="https://www.w3.org/TR/FileAPI/">File API</a>, and <a href="http://www.unicode.org/">Unicode</a>. It also embeds an excerpt of the <a href="http://users.teilar.gr/~g1951d/">Symbola</a> font (as a data URI). The full font has glyphs for practically all the symbols in Unicode, and is "free for any use". I use just the ASCII part part plus some extra Latin and Greek characters, and glyphs for most of the tool and menu icons in this application.</p>
  <button onclick="hide(helpWindow)">dismiss</button>
+</div>
+<div id="settings-window" class="popup" style="display: none;">
+ <h1>Settings</h1>
+ <p>TODO</p>
+ <button onclick="hide(settingsWindow)">dismiss</button>
 </div>
 </body></html>
