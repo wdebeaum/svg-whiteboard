@@ -89,10 +89,13 @@ text {
   font-family: Symbola;
   position: absolute;
 }
-#doc-and-selection path {
+#doc-and-selection path { /* freehand */
   fill: none;
   stroke-linejoin: round;
   stroke-linecap: round;
+}
+#doc-and-selection line { /* arrows */
+  marker-end: url('#arrow-head');
 }
 #selection-filter {
   filter: url('#shadow');
@@ -463,6 +466,23 @@ function reopenTextInput(tspan) {
   textToolInput.focus();
 }
 
+// remove connections (arrows, line elements) that have one end in the selection
+function removeSelectionConnections() {
+  var cs = doc.childNodes;
+  for (var i = cs.length-1; i >=0; i--) {
+    if (cs[i] instanceof SVGLineElement) {
+      var headID = cs[i].getAttribute('head-id');
+      var headObject = document.getElementById(headID);
+      var tailID = cs[i].getAttribute('tail-id');
+      var tailObject = document.getElementById(tailID);
+      if (headObject.parentNode === selection ||
+	  tailObject.parentNode === selection) {
+	doc.removeChild(cs[i]);
+      }
+    }
+  }
+}
+
 function removeAllChildren(node) {
   var cs = node.childNodes;
   for (var i = cs.length-1; i >= 0; i--) {
@@ -529,7 +549,24 @@ function moveSelectedObjects(currentMovement) {
       cs[i].transform.baseVal.consolidate();
     }
   }
-  // TODO move unselected arrows' selected heads/tails
+  // move unselected arrows' selected heads/tails
+  cs = doc.childNodes;
+  for (var i = cs.length-1; i >= 0; i--) {
+    if (cs[i] instanceof SVGLineElement) { // arrow
+      var headID = cs[i].getAttribute('head-id');
+      var headObject = document.getElementById(headID);
+      if (headObject.parentNode === selection) {
+	cs[i].x2.baseVal.value += currentMovement.x;
+	cs[i].y2.baseVal.value += currentMovement.y;
+      }
+      var tailID = cs[i].getAttribute('tail-id');
+      var tailObject = document.getElementById(tailID);
+      if (tailObject.parentNode === selection) {
+	cs[i].x1.baseVal.value += currentMovement.x;
+	cs[i].y1.baseVal.value += currentMovement.y;
+      }
+    }
+  }
 }
 
 // event handlers for each tool
@@ -581,24 +618,50 @@ var tools = {
   },
   connect: {
     ondocmousedown: function(e, docCoords) {
+      anchorSelection(); // get rid of old selection
       var tailID = ensureID(getDocChild(e.target));
-      var arrow;
-      // TODO create arrow
-      selection.appendChild(arrow);
-      draggedObject = arrow;
+      draggedObject = document.createElementNS(svgNS, 'line'); // arrow
+      // position
+      draggedObject.setAttribute('x1', docCoords.x);
+      draggedObject.setAttribute('y1', docCoords.y);
+      draggedObject.setAttribute('x2', docCoords.x);
+      draggedObject.setAttribute('y2', docCoords.y);
+      // style
+      draggedObject.setAttribute('stroke', currentColor);
+      draggedObject.setAttribute('stroke-width', currentSize * 2);
+      // bookkeeping
+      draggedObject.setAttribute('tail-id', tailID);
+      // put arrow in selection
+      selection.appendChild(draggedObject);
+      // put selection below rest of document, so that mouseup goes to the
+      // intended target instead of the arrow head
+      // (tried using CSS z-index, didn't work)
+      var selectionFilter = selection.parentNode;
+      docAndSelection.removeChild(selectionFilter);
+      docAndSelection.insertBefore(selectionFilter, doc);
     },
     onmousemove: function(e, currentMovement) {
-      // TODO update arrow head position
+      draggedObject.x2.baseVal.value += currentMovement.x;
+      draggedObject.y2.baseVal.value += currentMovement.y;
     },
     onmouseup: function(e) {
-      if (e.target === doc || e.target.id == arrow.getAttribute('tail-id')) {
-	// cancel arrow if it goes nowhere or back to its tail object
+      if (mouseIsOverUI || // arrow to buttons
+	  e.target === doc || // arrow to nowhere
+	  e.target instanceof SVGLineElement || // arrow to another arrow, self
+	  // circular arrow
+	  e.target.id == draggedObject.getAttribute('tail-id')) {
+	// cancel arrow
 	selection.removeChild(draggedObject);
-      } else { // complete arrow
+      } else { // arrow to another object in the document
+	// complete arrow
 	var headID = ensureID(getDocChild(e.target));
 	draggedObject.setAttribute('head-id', headID);
 	anchorSelection();
       }
+      // undo putting selection below rest of document (see mousedown)
+      var selectionFilter = selection.parentNode;
+      docAndSelection.removeChild(selectionFilter);
+      docAndSelection.appendChild(selectionFilter);
     }
   },
   move: {
@@ -953,7 +1016,8 @@ window.onload = function() {
       // TODO factor out relationship between currentSize and element-specific properties
       var cs = selection.childNodes;
       for (var i = cs.length-1; i >= 0; i--) {
-	if (cs[i] instanceof SVGPathElement) {
+	if (cs[i] instanceof SVGPathElement ||
+	    cs[i] instanceof SVGLineElement) {
 	  cs[i].setAttribute('stroke-width', currentSize * 2);
 	} else if (cs[i] instanceof SVGTextElement) {
 	  cs[i].style.setProperty('font-size', (parseInt(currentSize) + 7) + 'pt');
@@ -978,7 +1042,8 @@ window.onload = function() {
       // update selected objects
       var cs = selection.childNodes;
       for (var i = cs.length-1; i >= 0; i--) {
-	if (cs[i] instanceof SVGPathElement) {
+	if (cs[i] instanceof SVGPathElement ||
+	    cs[i] instanceof SVGLineElement) {
 	  cs[i].setAttribute('stroke', currentColor);
 	} else if (cs[i] instanceof SVGTextElement) {
 	  cs[i].style.setProperty('fill', currentColor);
@@ -990,6 +1055,8 @@ window.onload = function() {
   var deleteButton = document.getElementById('delete-button');
   deleteButton.onclick = function(e) {
     e.stopPropagation();
+    // remove connections to the selection
+    removeSelectionConnections();
     // remove all children of the selection node
     removeAllChildren(selection);
   }
@@ -1068,6 +1135,9 @@ window.onload = function() {
    <tspan dx="-1ex">⁻</tspan>
   </text>
   <text id="menu-icon" x="4px" y="1.75ex" font-size="24pt">≡</text>
+  <marker id="arrow-head" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="strokeWidth" markerWidth="4" markerHeight="3" orient="auto">
+   <path d="M 0 0 L 10 5 L 0 10 z" stroke="context-stroke"/><!-- NOTE: context-stroke is from SVG2, and as of this writing it is not implemented in Firefox or Chrome. It doesn't hurt to include it though. -->
+  </marker>
  </defs>
  <g id="doc-and-selection">
   <g id="doc" transform="translate(0,0) scale(1 1)">
@@ -1243,8 +1313,8 @@ window.onload = function() {
    <dd>Draw freehand lines by dragging your pointer.</dd>
   <dt><svg class="inline icon"><use xlink:href="#text-icon"></use></svg> Text</dt>
    <dd>Click where you want the text to start, and type. Click elsewhere to finish. You can also click on a previously added piece of text to re-open it.</dd>
-  <dt><svg class="inline icon"><use xlink:href="#connect-icon"></use></svg> Connect (WIP)</dt>
-   <dd>Will let you connect existing objects (drawn lines, texts, or imported images) with straight arrows, which will move along with the objects they are connected to. <em>Not yet implemented.</em></dd>
+  <dt><svg class="inline icon"><use xlink:href="#connect-icon"></use></svg> Connect</dt>
+   <dd>Connects existing objects (drawn lines, texts, or imported images) with straight arrows, which move along with the objects they are connected to.</dd>
   <dt><svg class="inline icon select-icon-use unclicked"><use xlink:href="#select-icon"></use></svg> Select</dt>
    <dd>Click on an object to select only that object, or drag a box around a group of objects to select all of them. Selected objects will have a drop shadow. Drag any selected object to move the whole selection.</dd>
   <dt><svg class="inline icon"><use xlink:href="#copy-icon"></use></svg> Copy</dt>
@@ -1272,7 +1342,7 @@ window.onload = function() {
   <dt><svg class="inline icon"><use xlink:href="#open-icon"></use></svg> Open...</dt>
    <dd>Lets you load the contents of a whiteboard you previously saved. Loading the file directly into your web browser will have essentially the same effect.</dd>
   <dt><svg class="inline icon"><use xlink:href="#import-icon"></use></svg> Import...</dt>
-   <dd>Will let you load an image file as an object to place on the whiteboard.</dd>
+   <dd>Lets you load an image file as an object to place on the whiteboard.</dd>
   <dt><svg class="inline icon"><use xlink:href="#save-icon"></use></svg> Save...</dt>
    <dd>Lets you save the whiteboard (both the contents <em>and the application itself</em>) to your computer.</dd>
   <dt><svg class="inline icon"><use xlink:href="#settings-icon"></use></svg> Settings... (WIP)</dt>
