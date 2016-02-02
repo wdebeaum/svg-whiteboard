@@ -128,6 +128,13 @@ dt {
 .invisible {
   display: none;
 }
+input[type="number"] {
+  width: 4em;
+  text-align: right;
+}
+input[type="color"] {
+  vertical-align: middle;
+}
 </style>
 <script type="text/javascript">
 function show(elem) {
@@ -1375,7 +1382,24 @@ window.onload = function() {
 </div>
 <div id="settings-window" class="popup" style="display: none;">
  <h1>Settings</h1>
- <p>TODO</p>
+ <label>Current color is <input id="current-color" type="color" value="#0000c0">.</label>
+ <button onclick="addColor()">+ add</button>
+ <button onclick="removeCurrentColor()">- remove</button>
+ <hr>
+ <label>Horizontal scroll wheel/gesture pans by <input id="invert-scroll-x" type="number" value="53"> pixels (enter a negative number to reverse direction).</label><br>
+ <label>Vertical scroll wheel/gesture pans by <input id="invert-scroll-y" type="number" value="53"> pixels.</label><br>
+ <label><input id="invert-scroll-zoom" type="checkbox"> Invert vertical scroll wheel/gesture for zooming.</label><br>
+ <label>Zooming in once makes things appear <input id="zoom-step" type="number" value="2">x bigger.</label>
+ <hr>
+ <label><input id="enable-fisheye" type="checkbox" checked> Enable fisheye effect while panning.</label>
+ <div id="fisheye-settings">
+  <label>Borders show <input id="fisheye-border-squash" type="number" min="1" value="2">x what they normally do, squashed in from beyond the screen.</label><br>
+  <label>Each border is thick enough to use <input id="fisheye-border-thickness" type="number" min="0" max="50" value="10">% of the screen.</label><br>
+   <!-- TODO preview? -->
+ </div>
+ <!-- TODO collaboration settings -->
+ <hr>
  <button onclick="hide(settingsWindow)">dismiss</button>
+ <button onclick="restoreDefaultSettings()">restore defaults</button>
 </div>
 </body></html>
