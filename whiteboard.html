@@ -260,6 +260,10 @@ var textToolInput = undefined;
 var helpWindow = undefined;
 var settingsWindow = undefined;
 var colorInput = undefined;
+var panScrollX = undefined;
+var panScrollY = undefined;
+var invertScrollZoom = undefined;
+var zoomStep = undefined;
 var colorToolbar = undefined;
 var deleteButton = undefined;
 var currentTool = 'draw';
@@ -726,7 +730,11 @@ function restoreDefaultSettings() {
   addColor('#000000');
   // switch to default color
   switchColor(colorToolbar.childNodes[11]); // blue
-  // TODO
+  panScrollX.value = 53;
+  panScrollY.value = 53;
+  invertScrollZoom.checked = false;
+  zoomStep.value = 2;
+  // TODO fisheye settings
 }
 
 // event handlers for each tool
@@ -902,12 +910,12 @@ var tools = {
   },
   'zoom-in': {
     onclick: function(e, docCoords) {
-      zoomRelative(2, docCoords);
+      zoomRelative(zoomStep.value, docCoords);
     }
   },
   'zoom-out': {
     onclick: function(e, docCoords) {
-      zoomRelative(0.5, docCoords);
+      zoomRelative(1.0 / zoomStep.value, docCoords);
     }
   },
   text: {
@@ -1005,8 +1013,12 @@ function onwheel(e) {
   }
   console.log(delta.x + ' ' + delta.y);
   if (/^zoom-/.test(currentTool)) {
-    zoomRelative(Math.pow(2, -delta.y / 53), docCoords);
+    var factor =
+      Math.pow(zoomStep.value, (invertScrollZoom.checked ? 1 : -1) * delta.y / 53)
+    zoomRelative(factor, docCoords);
   } else {
+    delta.x = delta.x * panScrollX.value / 53;
+    delta.y = delta.y * panScrollY.value / 53;
     panRelative(delta);
   }
 }
@@ -1023,6 +1035,10 @@ window.onload = function() {
   helpWindow = document.getElementById("help-window");
   settingsWindow = document.getElementById("settings-window");
   colorInput = document.getElementById("color-input");
+  panScrollX = document.getElementById("pan-scroll-x");
+  panScrollY = document.getElementById("pan-scroll-y");
+  invertScrollZoom = document.getElementById("invert-scroll-zoom");
+  zoomStep = document.getElementById("zoom-step");
   colorToolbar = document.getElementById("color-toolbar");
   deleteButton = document.getElementById('delete-button');
   var menu = document.getElementById("menu");
@@ -1510,8 +1526,8 @@ window.onload = function() {
  <button onclick="addColor()">+ add</button>
  <button onclick="removeCurrentColor()">- remove</button>
  <hr>
- <label>Horizontal scroll wheel/gesture pans by <input id="invert-scroll-x" type="number" value="53"> pixels (enter a negative number to reverse direction).</label><br>
- <label>Vertical scroll wheel/gesture pans by <input id="invert-scroll-y" type="number" value="53"> pixels.</label><br>
+ <label>Horizontal scroll wheel/gesture pans by <input id="pan-scroll-x" type="number" value="53"> pixels (enter a negative number to reverse direction).</label><br>
+ <label>Vertical scroll wheel/gesture pans by <input id="pan-scroll-y" type="number" value="53"> pixels.</label><br>
  <label><input id="invert-scroll-zoom" type="checkbox"> Reverse direction of zooming with vertical scroll wheel/gesture.</label><br>
  <label>Zooming in once makes things appear <input id="zoom-step" type="number" value="2">x bigger.</label>
  <hr>
