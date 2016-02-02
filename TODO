@@ -12,7 +12,7 @@
    - pan/zoom inversion/chunk size
     ? calibration boxes
    - collaboration settings
-   ? colors in palette
+   # colors in palette
    ? fisheye border
     - enabled
     - border thickness

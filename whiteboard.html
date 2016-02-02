@@ -259,9 +259,12 @@ var iconStyle = undefined;
 var textToolInput = undefined;
 var helpWindow = undefined;
 var settingsWindow = undefined;
+var colorInput = undefined;
+var colorToolbar = undefined;
+var deleteButton = undefined;
 var currentTool = 'draw';
 var currentSize = 5;
-var currentColor = '#00c';
+var currentColor = '#0000c0';
 var draggedObject = null;
 var deferredMovement = null;
 var dragging = false;
@@ -503,6 +506,10 @@ function removeAllChildren(node) {
   }
 }
 
+function appendNewline(node) {
+  node.appendChild(document.createTextNode("\n"));
+}
+
 function clearDocument() {
   dismissTextInput();
   removeAllChildren(doc);
@@ -580,6 +587,146 @@ function moveSelectedObjects(currentMovement) {
       }
     }
   }
+}
+
+// settings change handlers
+
+function switchColor(colorButton) {
+  var circle = colorButton.lastElementChild;
+  var color = circle.getAttribute('fill');
+  currentColor = color;
+  colorInput.value = color;
+  console.log("current color is now " + currentColor);
+  makeToolbarUnclicked(colorToolbar);
+  makeButtonClicked(colorButton);
+}
+
+function switchToNextColor(currentColorButton) {
+  if (!currentColorButton) {
+    // not supplied, look up by class
+    currentColorButton = document.getElementsByClassName('clicked color')[0];
+  }
+  console.log(currentColorButton);
+  if (!currentColorButton) {
+    // no clicked color, pick the first one and return
+    switchColor(colorToolbar.childNodes[3]);
+    return;
+  } else {
+    currentColorButton = currentColorButton.parentNode;
+  }
+  console.log(currentColorButton);
+  var nextColorButton = currentColorButton.nextSibling.nextSibling;
+  console.log(nextColorButton);
+  if (!nextColorButton) {
+    // wrap to beginning
+    nextColorButton = colorToolbar.childNodes[3];
+  }
+  console.log(nextColorButton);
+  switchColor(nextColorButton);
+  console.log('done');
+}
+
+function onColorButtonClick(button, e) {
+  e.stopPropagation();
+  switchColor(button);
+  // update selected objects
+  var cs = selection.childNodes;
+  for (var i = cs.length-1; i >= 0; i--) {
+    if (cs[i] instanceof SVGPathElement ||
+	cs[i] instanceof SVGLineElement) {
+      cs[i].setAttribute('stroke', currentColor);
+    } else if (cs[i] instanceof SVGTextElement) {
+      cs[i].style.setProperty('fill', currentColor);
+    }
+  }
+}
+
+function addColor(newColor) {
+  // default to color input value
+  if (!newColor) {
+    newColor = colorInput.value;
+  }
+  // make new color button g
+  var g = document.createElementNS(svgNS, 'g');
+  // X coordinate of last color
+  var lastColor = colorToolbar.lastElementChild;
+  if (lastColor instanceof SVGGElement) {
+    var x = colorToolbar.lastElementChild.transform.baseVal.getItem(0).matrix.e;
+  } else {
+    var x = 224; // -1st color
+  }
+  // ... next color
+  g.setAttribute('transform', 'translate(' + (x+32) + ',0)');
+  // ... and the delete button
+  deleteButton.setAttribute('transform', 'translate(' + (x+96) + ',0)');
+  // child elements of g
+  var use = document.createElementNS(svgNS, 'use');
+  use.setAttribute('class', 'unclicked frame');
+  use.setAttributeNS(xlinkNS, 'href', '#icon-frame');
+  g.appendChild(use);
+  var circle = document.createElementNS(svgNS, 'circle');
+  circle.setAttribute('class', 'unclicked color');
+  circle.setAttribute('fill', newColor); // K--------------
+  circle.setAttribute('r', 10);
+  circle.setAttribute('cx', 16);
+  circle.setAttribute('cy', 16);
+  g.appendChild(circle);
+  // add g to toolbar
+  colorToolbar.appendChild(g);
+  appendNewline(colorToolbar);
+  // set up handler
+  g.onclick = onColorButtonClick.bind(this, g);
+  // switch to it
+  switchColor(g);
+}
+
+function removeCurrentColor() {
+  // find g, remove it, move some colors and delete button left 32px
+  var cs = colorToolbar.childNodes;
+  for (i = cs.length-1; i >= 0; i--) {
+    if (cs[i] instanceof SVGGElement) {
+      if (cs[i].lastElementChild.getAttribute('class') == 'clicked color') {
+	switchToNextColor();
+	colorToolbar.removeChild(cs[i]);
+	break;
+      } else {
+	// move left 32px
+	cs[i].transform.baseVal.getItem(0).matrix.e -= 32;
+      }
+    }
+  }
+  deleteButton.transform.baseVal.getItem(0).matrix.e -= 32;
+}
+
+function changeCurrentColor(newColor) {
+  console.log('changing current color from ' + currentColor + ' to ' + newColor);
+  var circle = document.getElementsByClassName('clicked color')[0];
+  circle.setAttribute('fill', newColor);
+  currentColor = newColor;
+}
+
+function restoreDefaultSettings() {
+  // remove all color buttons
+  removeAllChildren(colorToolbar);
+  appendNewline(colorToolbar);
+  // move delete button to its minimum X coordinate
+  deleteButton.setAttribute('transform', 'translate(288,0)');
+  // add back tooltip
+  var colorTooltip = document.createElementNS(svgNS, 'title');
+  colorTooltip.innerHTML = 'set pen color';
+  colorToolbar.appendChild(colorTooltip);
+  appendNewline(colorToolbar);
+  // add back default colors
+  addColor('#c00000');
+  addColor('#c0c000');
+  addColor('#00c000');
+  addColor('#00c0c0');
+  addColor('#0000c0');
+  addColor('#c000c0');
+  addColor('#000000');
+  // switch to default color
+  switchColor(colorToolbar.childNodes[11]); // blue
+  // TODO
 }
 
 // event handlers for each tool
@@ -875,6 +1022,9 @@ window.onload = function() {
   textToolInput = document.getElementById('text-tool-input');
   helpWindow = document.getElementById("help-window");
   settingsWindow = document.getElementById("settings-window");
+  colorInput = document.getElementById("color-input");
+  colorToolbar = document.getElementById("color-toolbar");
+  deleteButton = document.getElementById('delete-button');
   var menu = document.getElementById("menu");
   hide(menu);
   var menuButton = document.getElementById("menu-button");
@@ -1051,33 +1201,13 @@ window.onload = function() {
     };
     return true;
   });
-  var colorToolbar = document.getElementById("color-toolbar");
   forEachToolbarButton(colorToolbar, function(button) {
-    var circle = button.childNodes[button.childNodes.length - 2];
-    var color = circle.getAttribute('fill');
     if (isButtonClicked(button)) {
-      currentColor = color;
+      switchColor(button);
     }
-    button.onclick = function(e) {
-      e.stopPropagation();
-      currentColor = color;
-      console.log("current color is now " + currentColor);
-      makeToolbarUnclicked(colorToolbar);
-      makeButtonClicked(button);
-      // update selected objects
-      var cs = selection.childNodes;
-      for (var i = cs.length-1; i >= 0; i--) {
-	if (cs[i] instanceof SVGPathElement ||
-	    cs[i] instanceof SVGLineElement) {
-	  cs[i].setAttribute('stroke', currentColor);
-	} else if (cs[i] instanceof SVGTextElement) {
-	  cs[i].style.setProperty('fill', currentColor);
-	}
-      }
-    };
+    button.onclick = onColorButtonClick.bind(this, button);
     return true;
   });
-  var deleteButton = document.getElementById('delete-button');
   deleteButton.onclick = function(e) {
     e.stopPropagation();
     // remove connections to the selection
@@ -1282,40 +1412,34 @@ window.onload = function() {
   </g>
   <!-- colors -->
   <g id="color-toolbar">
+   <title>set pen color</title>
    <g transform="translate(256,0)">
-    <title>set pen color</title>
     <use xlink:href="#icon-frame" class="unclicked frame"></use>
-    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#c00"></circle>
+    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#c00000"></circle>
    </g>
    <g transform="translate(288,0)">
-    <title>set pen color</title>
     <use xlink:href="#icon-frame" class="unclicked frame"></use>
-    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#cc0"></circle>
+    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#c0c000"></circle>
    </g>
    <g transform="translate(320,0)">
-    <title>set pen color</title>
     <use xlink:href="#icon-frame" class="unclicked frame"></use>
-    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#0c0"></circle>
+    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#00c000"></circle>
    </g>
    <g transform="translate(352,0)">
-    <title>set pen color</title>
     <use xlink:href="#icon-frame" class="unclicked frame"></use>
-    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#0cc"></circle>
+    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#00c0c0"></circle>
    </g>
    <g transform="translate(384,0)">
-    <title>set pen color</title>
     <use xlink:href="#icon-frame" class="clicked frame"></use>
-    <circle cx="16" cy="16" r="10" class="clicked color" fill="#00c"></circle>
+    <circle cx="16" cy="16" r="10" class="clicked color" fill="#0000c0"></circle>
    </g>
    <g transform="translate(416,0)">
-    <title>set pen color</title>
     <use xlink:href="#icon-frame" class="unclicked frame"></use>
-    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#c0c"></circle>
+    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#c000c0"></circle>
    </g>
    <g transform="translate(448,0)">
-    <title>set pen color</title>
     <use xlink:href="#icon-frame" class="unclicked frame"></use>
-    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#000"></circle>
+    <circle cx="16" cy="16" r="10" class="unclicked color" fill="#000000"></circle>
    </g>
   </g>
 
@@ -1382,13 +1506,13 @@ window.onload = function() {
 </div>
 <div id="settings-window" class="popup" style="display: none;">
  <h1>Settings</h1>
- <label>Current color is <input id="current-color" type="color" value="#0000c0">.</label>
+ <label>Current color is <input id="color-input" type="color" value="#0000c0" onchange="changeCurrentColor(this.value)">.</label>
  <button onclick="addColor()">+ add</button>
  <button onclick="removeCurrentColor()">- remove</button>
  <hr>
  <label>Horizontal scroll wheel/gesture pans by <input id="invert-scroll-x" type="number" value="53"> pixels (enter a negative number to reverse direction).</label><br>
  <label>Vertical scroll wheel/gesture pans by <input id="invert-scroll-y" type="number" value="53"> pixels.</label><br>
- <label><input id="invert-scroll-zoom" type="checkbox"> Invert vertical scroll wheel/gesture for zooming.</label><br>
+ <label><input id="invert-scroll-zoom" type="checkbox"> Reverse direction of zooming with vertical scroll wheel/gesture.</label><br>
  <label>Zooming in once makes things appear <input id="zoom-step" type="number" value="2">x bigger.</label>
  <hr>
  <label><input id="enable-fisheye" type="checkbox" checked> Enable fisheye effect while panning.</label>
