@@ -9,14 +9,14 @@
    - export: make a data URI for just the doc without the UI 
    ? also export to PNG using the canvas trick I used for cursors
   - settings:
-   - pan/zoom inversion/chunk size
+   # pan/zoom inversion/chunk size
     ? calibration boxes
    - collaboration settings
    # colors in palette
-   ? fisheye border
-    - enabled
-    - border thickness
-    - fisheye scaling amount
+   # fisheye border
+    # enabled
+    # border thickness
+    # fisheye scaling amount
     ? preview
   # about/help
  - undo/redo list
@@ -34,8 +34,11 @@
    - pinch zoom
    # two-finger pan/move
   # scrollwheel zoom
-  ? fisheye while panning
-   - move doc-and-selection to defs, and use it 9 times in a grid with transforms to compress the non-center cells, and clipping
+  # fisheye while panning
+   # move doc-and-selection to defs, and use it 9 times in a grid with transforms to compress the non-center cells, and clipping
+   ? (optionally?) draw a rectangle during fisheye where the edge of the screen would be after fisheye finishes
+    . line
+    . "grey out" stuff that's off screen
  ? allow arrows to other arrows
   > harder than other objects because movement becomes recursive
  # make arrow cursor hotspot change from tail to head on mousedown, and back on mouseup

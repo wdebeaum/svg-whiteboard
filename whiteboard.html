@@ -149,12 +149,16 @@ function isHidden(elem) {
   return (elem.style.display == 'none');
 }
 
-function toggleDisplay(elem) {
-  if (isHidden(elem)) {
+function setDisplay(elem, shown) {
+  if (shown) {
     show(elem);
   } else {
     hide(elem);
   }
+}
+
+function toggleDisplay(elem) {
+  setDisplay(elem, isHidden(elem));
 }
 
 function forEachChildClassName(elem, fn) {
@@ -264,6 +268,12 @@ var panScrollX = undefined;
 var panScrollY = undefined;
 var invertScrollZoom = undefined;
 var zoomStep = undefined;
+var enableFisheye = undefined;
+var fisheyeSettings = undefined;
+var fisheyeBorderSquash = undefined;
+var fisheyeBorderThickness = undefined;
+var fisheyeTimeout = undefined;
+var fisheyeBorders = undefined;
 var colorToolbar = undefined;
 var deleteButton = undefined;
 var currentTool = 'draw';
@@ -734,7 +744,39 @@ function restoreDefaultSettings() {
   panScrollY.value = 53;
   invertScrollZoom.checked = false;
   zoomStep.value = 2;
-  // TODO fisheye settings
+  // fisheye settings
+  enableFisheye.checked = true;
+  fisheyeBorderSquash.value = 3;
+  fisheyeBorderThickness.value = 15;
+  fisheyeTimeout.value = 250;
+}
+
+function updateFisheye() {
+  var pageDims = svg.getBoundingClientRect();
+  var thickness = fisheyeBorderThickness.value / 100.0;
+  var xThickness = pageDims.width * thickness;
+  var yThickness = pageDims.height * thickness;
+  var clipRectXs = [0, xThickness, pageDims.width - xThickness, pageDims.width];
+  var clipRectYs = [0, yThickness, pageDims.height - yThickness, pageDims.height];
+  var scale = 1.0 / fisheyeBorderSquash.value;
+  var scales = [scale, 1, scale];
+  var translateXs = [xThickness * (1-scale), 0, clipRectXs[2] * (1-scale)];
+  var translateYs = [yThickness * (1-scale), 0, clipRectYs[2] * (1-scale)];
+  for (var y = 0; y < 3; y++) {
+    for (var x = 0; x < 3; x++) {
+      if (x == 1 && y == 1) {
+	continue;
+      }
+      var suffix = '-' + x + y;
+      var clipRect = document.getElementById('fecp' + suffix).firstElementChild;
+      clipRect.setAttribute('x', clipRectXs[x]);
+      clipRect.setAttribute('y', clipRectYs[y]);
+      clipRect.setAttribute('width', clipRectXs[x+1] - clipRectXs[x]);
+      clipRect.setAttribute('height', clipRectYs[y+1] - clipRectYs[y]);
+      var use = document.getElementById('feu' + suffix);
+      use.setAttribute('transform', 'translate(' + translateXs[x] + ',' + translateYs[y] + ') scale(' + scales[x] + ',' + scales[y] + ')');
+    }
+  }
 }
 
 // event handlers for each tool
@@ -839,9 +881,16 @@ var tools = {
   move: {
     onmousedown: function(e, docCoords) {
       draggedObject = doc.transform.baseVal.getItem(0);
+      if (enableFisheye.checked) {
+	updateFisheye();
+	show(fisheyeBorders);
+      }
     },
     onmousemove: function(e, currentMovement) {
       panRelative(currentMovement, draggedObject);
+    },
+    onmouseup: function(e) {
+      hide(fisheyeBorders);
     }
   },
   select: {
@@ -989,6 +1038,7 @@ function onmouseup(e) {
   }
 }
 
+var fisheyeTimeoutID = undefined;
 function onwheel(e) {
   e.stopPropagation(e);
   var docCoords = getEventCoordsRelativeToDoc(e);
@@ -1020,6 +1070,15 @@ function onwheel(e) {
     delta.x = delta.x * panScrollX.value / 53;
     delta.y = delta.y * panScrollY.value / 53;
     panRelative(delta);
+    if (enableFisheye.checked) {
+      updateFisheye();
+      show(fisheyeBorders);
+      if (fisheyeTimeoutID) {
+	clearTimeout(fisheyeTimeoutID);
+      }
+      fisheyeTimeoutID =
+        setTimeout(hide.bind(window, fisheyeBorders), fisheyeTimeout.value);
+    }
   }
 }
 
@@ -1039,6 +1098,12 @@ window.onload = function() {
   panScrollY = document.getElementById("pan-scroll-y");
   invertScrollZoom = document.getElementById("invert-scroll-zoom");
   zoomStep = document.getElementById("zoom-step");
+  enableFisheye = document.getElementById("enable-fisheye");
+  fisheyeSettings = document.getElementById("fisheye-settings");
+  fisheyeBorderSquash = document.getElementById("fisheye-border-squash");
+  fisheyeBorderThickness = document.getElementById("fisheye-border-thickness");
+  fisheyeTimeout = document.getElementById("fisheye-timeout");
+  fisheyeBorders = document.getElementById("fisheye-borders");
   colorToolbar = document.getElementById("color-toolbar");
   deleteButton = document.getElementById('delete-button');
   var menu = document.getElementById("menu");
@@ -1311,6 +1376,7 @@ window.onload = function() {
    <path d="M 0 0 L 10 5 L 0 10 z" stroke="context-stroke"/><!-- NOTE: context-stroke is from SVG2, and as of this writing it is not implemented in Firefox or Chrome. It doesn't hurt to include it though. -->
   </marker>
  </defs>
+ <rect id="background" x="0" y="0" width="100%" height="100%" fill="white"></rect>
  <g id="doc-and-selection">
   <g id="doc" transform="translate(0,0) scale(1 1)">
   </g>
@@ -1318,6 +1384,66 @@ window.onload = function() {
    <g id="selection" transform="translate(0,0) scale(1 1)">
    </g>
   </g>
+ </g>
+ <g id="fisheye-borders" style="display: none;">
+  <!-- original measurements for 100x100 screen, to be updated each time fisheyeis activated -->
+  <clipPath id="fecp-00"><rect x="0" y="0" width="10" height="10"></rect></clipPath>
+  <symbol id="fes-00">
+   <use xlink:href="#background"></use>
+   <use id="feu-00" xlink:href="#doc-and-selection" transform="translate(5,5) scale(0.5,0.5)"></use>
+  </symbol>
+  <use xlink:href="#fes-00" style="clip-path: url(#fecp-00)"></use>
+
+  <clipPath id="fecp-01"><rect x="0" y="10" width="10" height="80"></rect></clipPath>
+  <symbol id="fes-01">
+   <use xlink:href="#background"></use>
+   <use id="feu-01" xlink:href="#doc-and-selection" transform="translate(5,0) scale(0.5,1)"></use>
+  </symbol>
+  <use xlink:href="#fes-01" style="clip-path: url(#fecp-01)"></use>
+
+  <clipPath id="fecp-02"><rect x="0" y="90" width="10" height="10"></rect></clipPath>
+  <symbol id="fes-02">
+   <use xlink:href="#background"></use>
+   <use id="feu-02" xlink:href="#doc-and-selection" transform="translate(5,45) scale(0.5,0.5)"></use>
+  </symbol>
+  <use xlink:href="#fes-02" style="clip-path: url(#fecp-02)"></use>
+
+
+  <clipPath id="fecp-10"><rect x="10" y="0" width="80" height="10"></rect></clipPath>
+  <symbol id="fes-10">
+   <use xlink:href="#background"></use>
+   <use id="feu-10" xlink:href="#doc-and-selection" transform="translate(0,5) scale(1,0.5)"></use>
+  </symbol>
+  <use xlink:href="#fes-10" style="clip-path: url(#fecp-10)"></use>
+
+  <clipPath id="fecp-12"><rect x="10" y="90" width="80" height="10"></rect></clipPath>
+  <symbol id="fes-12">
+   <use xlink:href="#background"></use>
+   <use id="feu-12" xlink:href="#doc-and-selection" transform="translate(0,45) scale(1,0.5)"></use>
+  </symbol>
+  <use xlink:href="#fes-12" style="clip-path: url(#fecp-12)"></use>
+
+
+  <clipPath id="fecp-20"><rect x="90" y="0" width="10" height="10"></rect></clipPath>
+  <symbol id="fes-20">
+   <use xlink:href="#background"></use>
+   <use id="feu-20" xlink:href="#doc-and-selection" transform="translate(45,5) scale(0.5,0.5)"></use>
+  </symbol>
+  <use xlink:href="#fes-20" style="clip-path: url(#fecp-20)"></use>
+
+  <clipPath id="fecp-21"><rect x="90" y="10" width="10" height="80"></rect></clipPath>
+  <symbol id="fes-21">
+   <use xlink:href="#background"></use>
+   <use id="feu-21" xlink:href="#doc-and-selection" transform="translate(45,0) scale(0.5,1)"></use>
+  </symbol>
+  <use xlink:href="#fes-21" style="clip-path: url(#fecp-21)"></use>
+
+  <clipPath id="fecp-22"><rect x="90" y="90" width="10" height="10"></rect></clipPath>
+  <symbol id="fes-22">
+   <use xlink:href="#background"></use>
+   <use id="feu-22" xlink:href="#doc-and-selection" transform="translate(45,45) scale(0.5,0.5)"></use>
+  </symbol>
+  <use xlink:href="#fes-22" style="clip-path: url(#fecp-22)"></use>
  </g>
  <g id="ui">
   <rect id="select-rect" style="display: none;" x="0" y="0" width="0" height="0"></rect>
@@ -1531,10 +1657,11 @@ window.onload = function() {
  <label><input id="invert-scroll-zoom" type="checkbox"> Reverse direction of zooming with vertical scroll wheel/gesture.</label><br>
  <label>Zooming in once makes things appear <input id="zoom-step" type="number" value="2">x bigger.</label>
  <hr>
- <label><input id="enable-fisheye" type="checkbox" checked> Enable fisheye effect while panning.</label>
+ <label><input id="enable-fisheye" type="checkbox" onchange="setDisplay(fisheyeSettings, this.checked)" checked> Enable fisheye effect while panning.</label>
  <div id="fisheye-settings">
-  <label>Borders show <input id="fisheye-border-squash" type="number" min="1" value="2">x what they normally do, squashed in from beyond the screen.</label><br>
-  <label>Each border is thick enough to use <input id="fisheye-border-thickness" type="number" min="0" max="50" value="10">% of the screen.</label><br>
+  <label>Borders show <input id="fisheye-border-squash" type="number" min="1" value="3">x what they normally do, squashed in from beyond the screen.</label><br>
+  <label>Each border is thick enough to use <input id="fisheye-border-thickness" type="number" min="0" max="50" value="15">% of the screen.</label><br>
+  <label>Continue fisheye effect for <input id="fisheye-timeout" type="number" min="0" value="250"> milliseconds after panning with scroll wheel/gesture.</label>
    <!-- TODO preview? -->
  </div>
  <!-- TODO collaboration settings -->
