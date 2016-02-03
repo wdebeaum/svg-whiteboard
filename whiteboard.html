@@ -888,6 +888,10 @@ var tools = {
     },
     onmousemove: function(e, currentMovement) {
       panRelative(currentMovement, draggedObject);
+      if (enableFisheye.checked) { // FIXME firefox workaround
+	svg.removeChild(fisheyeBorders);
+	svg.insertBefore(fisheyeBorders, document.getElementById('ui'));
+      }
     },
     onmouseup: function(e) {
       hide(fisheyeBorders);
@@ -1072,6 +1076,10 @@ function onwheel(e) {
     panRelative(delta);
     if (enableFisheye.checked) {
       updateFisheye();
+      if (enableFisheye.checked) { // FIXME firefox workaround
+	svg.removeChild(fisheyeBorders);
+	svg.insertBefore(fisheyeBorders, document.getElementById('ui'));
+      }
       show(fisheyeBorders);
       if (fisheyeTimeoutID) {
 	clearTimeout(fisheyeTimeoutID);
