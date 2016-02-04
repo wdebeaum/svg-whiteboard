@@ -56,5 +56,7 @@
  # don't fill selection cursor (or come up with a different cursor)
  ? trashcan vs. eraser
  # lots of refactoring
+ - eliminate cracks in fisheye borders (round cliprect measurements?)
+ - "move" icon alignment on Firefox
 - license
  > I'd like to include a public domain dedication, but I want to make it clear that only the application is in the public domain; anything you create with it doesn't have to be, and you shouldn't have to dig into it and remove the dedication
