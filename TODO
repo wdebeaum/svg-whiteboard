@@ -36,9 +36,9 @@
   # scrollwheel zoom
   # fisheye while panning
    # move doc-and-selection to defs, and use it 9 times in a grid with transforms to compress the non-center cells, and clipping
-   ? (optionally?) draw a rectangle during fisheye where the edge of the screen would be after fisheye finishes
+   # (optionally?) draw a rectangle during fisheye where the edge of the screen would be after fisheye finishes
     . line
-    . "grey out" stuff that's off screen
+    # "grey out" stuff that's off screen
  ? allow arrows to other arrows
   > harder than other objects because movement becomes recursive
  # make arrow cursor hotspot change from tail to head on mousedown, and back on mouseup
