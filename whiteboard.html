@@ -755,8 +755,8 @@ function restoreDefaultSettings() {
 function updateFisheye() {
   var pageDims = svg.getBoundingClientRect();
   var thickness = fisheyeBorderThickness.value / 100.0;
-  var xThickness = pageDims.width * thickness;
-  var yThickness = pageDims.height * thickness;
+  var xThickness = Math.round(pageDims.width * thickness);
+  var yThickness = Math.round(pageDims.height * thickness);
   var clipRectXs = [0, xThickness, pageDims.width - xThickness, pageDims.width];
   var clipRectYs = [0, yThickness, pageDims.height - yThickness, pageDims.height];
   var scale = 1.0 / fisheyeBorderSquash.value;
