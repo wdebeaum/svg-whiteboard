@@ -5,6 +5,8 @@
   # new: just clear everything in doc and selection
   # open: load file and copy everything under doc-and-selection
    # import: load file and put its contents in the selection
+    ? do this when an image is dropped
+    ? import text
   # save: make data URI from document.outerHTML, put it in a link with a content-disposition that makes the browser save it instead of loading it again
    - export: make a data URI for just the doc without the UI 
    ? also export to PNG using the canvas trick I used for cursors
@@ -23,10 +25,11 @@
  - collaboration via WebRTC/STUN/TURN/ICE/acronym-of-the-week
   ? with A/V/text chat inset
 - UI enhancements
- - ctrl-zxcv shortcuts (via corresponding events?)
+ ? ctrl-zxcv shortcuts (via corresponding events?)
+  > ctrl-z maybe (and redo: ctrl-y), but clipboard stuff is complicated by security considerations
  # clicking with text tool on a <tspan> reopens the text
   ? and places the cursor where you clicked
- - arbitrary color picker
+ # arbitrary color picker
  - better pan/zoom controls
   # zoom level indicator
   - zoom level selector
@@ -63,3 +66,4 @@
  ? delete sometimes doesn't work?
 - license
  > I'd like to include a public domain dedication, but I want to make it clear that only the application is in the public domain; anything you create with it doesn't have to be, and you shouldn't have to dig into it and remove the dedication
+ > maybe it would suffice to have a separate license file in the repo and a link to it in the main file?
