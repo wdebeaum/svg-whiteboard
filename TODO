@@ -1,69 +1,34 @@
-= features
- # copy button
- # connection tool
- - menu items
-  # new: just clear everything in doc and selection
-  # open: load file and copy everything under doc-and-selection
-   # import: load file and put its contents in the selection
-    ? do this when an image is dropped
-    ? import text
-  # save: make data URI from document.outerHTML, put it in a link with a content-disposition that makes the browser save it instead of loading it again
-   - export: make a data URI for just the doc without the UI 
-   ? also export to PNG using the canvas trick I used for cursors
-  - settings:
-   # pan/zoom inversion/chunk size
-    ? calibration boxes
-   - collaboration settings
-   # colors in palette
-   # fisheye border
-    # enabled
-    # border thickness
-    # fisheye scaling amount
-    ? preview
-  # about/help
- - undo/redo list
- - collaboration via WebRTC/STUN/TURN/ICE/acronym-of-the-week
-  ? with A/V/text chat inset
-- UI enhancements
- ? ctrl-zxcv shortcuts (via corresponding events?)
-  > ctrl-z maybe (and redo: ctrl-y), but clipboard stuff is complicated by security considerations
- # clicking with text tool on a <tspan> reopens the text
-  ? and places the cursor where you clicked
- # arbitrary color picker
- - better pan/zoom controls
-  # zoom level indicator
-  - zoom level selector
-  - optional multitouch gestures
-   - pinch zoom
-   # two-finger pan/move
-  # scrollwheel zoom
-  # fisheye while panning
-   # move doc-and-selection to defs, and use it 9 times in a grid with transforms to compress the non-center cells, and clipping
-   # (optionally?) draw a rectangle during fisheye where the edge of the screen would be after fisheye finishes
-    . line
-    # "grey out" stuff that's off screen
- ? allow arrows to other arrows
-  > harder than other objects because movement becomes recursive
- # make arrow cursor hotspot change from tail to head on mousedown, and back on mouseup
- - move tool drag from either end of an arrow = move just that end (switch back to arrow tool? or just use arrow tool for this instead of move?)
-  ? need marker for tail of arrow
-- bugfixes
- # clicking on an object in select mode also selects objects in its bounding box?!
- # anchor selection when switching away from selection/copy tools
- # cursor hotspots
- # don't add empty <text>s
- # don't reverse z-order when anchoring selection
- # apply zoom to textToolInput
- ? make new open a new tab/window with a blank document (using data URI) instead of clearing the current document
- # compensate for scrollwheel zoom chunkiness/directionality differences among different browsers/scrolling devices
- - make the zoom level indicator take less horizontal space
- # let selectRect expand in any direction, not just down+right
- # don't fill selection cursor (or come up with a different cursor)
- ? trashcan vs. eraser
- # lots of refactoring
- # eliminate cracks in fisheye borders (round cliprect measurements?)
+= bugfixes
  - "move" icon alignment on Firefox
  ? delete sometimes doesn't work?
-- license
- > I'd like to include a public domain dedication, but I want to make it clear that only the application is in the public domain; anything you create with it doesn't have to be, and you shouldn't have to dig into it and remove the dedication
- > maybe it would suffice to have a separate license file in the repo and a link to it in the main file?
+ ? trashcan vs. eraser
+
+= enhancements of existing features
+ ? make new open a new tab/window with a blank document (using data URI) instead of clearing the current document
+ - import text files as well as images (using current text tool settings)
+ ? import on drop event
+ ? calibration boxes for scroll wheel/gesture for pan/zoom
+ - preview fisheye border settings
+ ? place text cursor where you clicked when reopening texts
+ - zoom level selector
+ - make the zoom level indicator take less horizontal space
+ - multitouch pinch to zoom (multitouch pan should already work via scroll events)
+  > waiting to get access to a device with a multitouch screen
+
+= new features
+ - license
+  > I'd like to include a public domain dedication, but I want to make it clear that only the application is in the public domain; anything you create with it doesn't have to be, and you shouldn't have to dig into it and remove the dedication
+  > maybe it would suffice to have a separate license file in the repo and a link to it in the main file?
+ - undo/redo list
+  ? ^Z ^Y keyboard shortcuts
+ ? clipboard interaction with SVG objects (not just text in textToolInput)
+  > complicated by browser security considerations
+  ? ^X ^C ^V keyboard shortcuts
+ - collaboration via WebRTC/STUN/TURN/ICE/acronym-of-the-week
+  ? add corresponding section to settings
+  ? with A/V/text chat inset
+ - move tool drag from either end of an arrow = move just that end (switch back to arrow tool? or just use arrow tool for this instead of move?)
+  ? need marker for tail of arrow
+ ? allow arrows to other arrows
+  > harder than other objects because movement becomes recursive
+
