@@ -42,6 +42,8 @@
  ? allow arrows to other arrows
   > harder than other objects because movement becomes recursive
  # make arrow cursor hotspot change from tail to head on mousedown, and back on mouseup
+ - move tool drag from either end of an arrow = move just that end (switch back to arrow tool? or just use arrow tool for this instead of move?)
+  ? need marker for tail of arrow
 - bugfixes
  # clicking on an object in select mode also selects objects in its bounding box?!
  # anchor selection when switching away from selection/copy tools
@@ -58,5 +60,6 @@
  # lots of refactoring
  # eliminate cracks in fisheye borders (round cliprect measurements?)
  - "move" icon alignment on Firefox
+ ? delete sometimes doesn't work?
 - license
  > I'd like to include a public domain dedication, but I want to make it clear that only the application is in the public domain; anything you create with it doesn't have to be, and you shouldn't have to dig into it and remove the dedication
