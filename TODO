@@ -34,9 +34,9 @@ Key:
  # license
   > I'd like to include a public domain dedication, but I want to make it clear that only the application is in the public domain; anything you create with it doesn't have to be, and you shouldn't have to dig into it and remove the dedication
   > maybe it would suffice to have a separate license file in the repo and a link to it in the main file?
- - undo/redo list
+ # undo/redo list
   # ^Z ^Y keyboard shortcuts
-  - buttons next to delete
+  # buttons next to delete
  ? clipboard interaction with SVG objects (not just text in textToolInput)
   > complicated by browser security considerations
   ? ^X ^C ^V keyboard shortcuts

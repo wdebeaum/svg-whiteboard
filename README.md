@@ -29,6 +29,7 @@ Try it online: http://www.uofr.net/~willdb/software/whiteboard.html
  - Change size and color of existing objects.
  - Re-edit existing text objects.
  - Delete objects.
+ - Undo/redo list.
  - Pan and zoom.
  - Practically infinite board space.
  - Optional fisheye effect helps you see where you're going while panning.
@@ -38,7 +39,6 @@ Try it online: http://www.uofr.net/~willdb/software/whiteboard.html
 
 ### Planned
 
- - Undo/redo list.
  - Live collaboration across the Internet. This part may require a server, but I'll try to make sure it doesn't require **my** server.
  - See TODO file for full list.
 
