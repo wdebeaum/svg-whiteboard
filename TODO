@@ -1,4 +1,5 @@
 = bugfixes
+ - disabling fisheye panning in Firefox temporarily breaks the pan tool until another tool is activated
  - "move" icon alignment on Firefox
  ? delete sometimes doesn't work?
  ? trashcan vs. eraser
