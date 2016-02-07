@@ -7,8 +7,10 @@
  ? make new open a new tab/window with a blank document (using data URI) instead of clearing the current document
  - import text files as well as images (using current text tool settings)
  ? import on drop event
+ ? resize imported images (add a handle when selected?)
  ? calibration boxes for scroll wheel/gesture for pan/zoom
  - preview fisheye border settings
+ ? size palette settings
  ? place text cursor where you clicked when reopening texts
  - zoom level selector
  - make the zoom level indicator take less horizontal space
@@ -16,7 +18,7 @@
   > waiting to get access to a device with a multitouch screen
 
 = new features
- - license
+ # license
   > I'd like to include a public domain dedication, but I want to make it clear that only the application is in the public domain; anything you create with it doesn't have to be, and you shouldn't have to dig into it and remove the dedication
   > maybe it would suffice to have a separate license file in the repo and a link to it in the main file?
  - undo/redo list
