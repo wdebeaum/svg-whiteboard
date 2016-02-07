@@ -439,11 +439,52 @@ MoveObjects.prototype.add = function(currentMovement) {
   this.movement.x += currentMovement.x;
   this.movement.y += currentMovement.y;
 };
+MoveObjects.prototype.nonzero = function() {
+  return (this.movement.x != 0 && this.movement.y != 0);
+};
 MoveObjects.prototype.undo = function() {
   moveObjects(this.movedObjects, { x: -this.movement.x, y: -this.movement.y });
 };
 MoveObjects.prototype.redo = function() {
   moveObjects(this.movedObjects, this.movement);
+};
+
+function SizeObjects(o, newSize) {
+  this.sizedObjects = ensureArray(o);
+  this.oldSizes = [];
+  for (var i = this.sizedObjects.length-1; i >= 0; i--) {
+    this.oldSizes[i] = getObjectSize(this.sizedObjects[i]);
+  }
+  this.newSize = newSize;
+}
+SizeObjects.prototype.undo = function() {
+  for (var i = this.sizedObjects.length-1; i >= 0; i--) {
+    setObjectSize(this.sizedObjects[i], this.oldSizes[i]);
+  }
+};
+SizeObjects.prototype.redo = function() {
+  for (var i = this.sizedObjects.length-1; i >= 0; i--) {
+    setObjectSize(this.sizedObjects[i], this.newSize);
+  }
+};
+
+function ColorObjects(o, newColor) {
+  this.coloredObjects = ensureArray(o);
+  this.oldColors = [];
+  for (var i = this.coloredObjects.length-1; i >= 0; i--) {
+    this.oldColors[i] = getObjectColor(this.coloredObjects[i]);
+  }
+  this.newColor = newColor;
+}
+ColorObjects.prototype.undo = function() {
+  for (var i = this.coloredObjects.length-1; i >= 0; i--) {
+    setObjectColor(this.coloredObjects[i], this.oldColors[i]);
+  }
+};
+ColorObjects.prototype.redo = function() {
+  for (var i = this.coloredObjects.length-1; i >= 0; i--) {
+    setObjectColor(this.coloredObjects[i], this.newColor);
+  }
 };
 
 function startAction(firstStep) {
@@ -509,13 +550,12 @@ function updateSelectRect() {
 }
 
 function newTextInput(pageCoords) {
-  var scale = doc.transform.baseVal.getItem(1).matrix.a;
   textToolInput.setAttribute('style',
     'left: ' + pageCoords.x + 'px; ' +
-    'top: ' + pageCoords.y + 'px; ' +
-    'font-size: ' + ((parseInt(currentSize) + 7) * scale) + 'pt; ' +
-    'color: ' + currentColor + ';'
+    'top: ' + pageCoords.y + 'px; '
   );
+  setObjectSize(textToolInput);
+  setObjectColor(textToolInput);
   textToolInput.focus();
   startAction();
 }
@@ -541,6 +581,7 @@ function finishTextInput() {
     docCoords = getEventCoordsRelativeToDoc(pageCoords);
     var text = document.createElementNS(svgNS, 'text');
     text.setAttribute('transform', 'translate(' + docCoords.x + ', ' + docCoords.y + ')');
+    // TODO use get/set Object Size/Color here?
     var ptSize = parseFloat(style.getPropertyValue('font-size'));
     var scale = doc.transform.baseVal.getItem(1).matrix.a;
     text.setAttribute('style',
@@ -566,7 +607,7 @@ function finishTextInput() {
 
 function reopenTextInput(tspan) {
   var text = getDocChild(tspan);
-  startAction(new DeleteObject(text)); // step 1: delete old text
+  startAction(new DeleteObjects(text)); // step 1: delete old text
   var tspans = text.childNodes;
   var lines = [];
   for (var i = tspans.length; i >= 0; i--) {
@@ -577,10 +618,11 @@ function reopenTextInput(tspan) {
   lines.reverse();
   textToolInput.value = lines.join("\n");
   var style = textToolInput.style;
+  // TODO use get/set ObjectSize here?
   var ptSize = parseFloat(text.style.getPropertyValue('font-size'));
   var scale = doc.transform.baseVal.getItem(1).matrix.a;
   style.setProperty('font-size', (ptSize * scale) + 'pt');
-  style.setProperty('color', text.style.getPropertyValue('fill'));
+  setObjectColor(textToolInput, getObjectColor(text));
   var translateMatrix = text.transform.baseVal.getItem(0).matrix;
   var docCoords = { x: translateMatrix.e, y: translateMatrix.f };
   var pageCoords = getDocCoordsRelativeToPage(docCoords);
@@ -707,6 +749,47 @@ function moveObjects(os, docMovement) {
 
 // settings change handlers
 
+function setObjectSize(o, size) {
+  if (size === undefined) {
+    size = currentSize;
+  }
+  if (o instanceof SVGPathElement ||
+      o instanceof SVGLineElement) {
+    o.setAttribute('stroke-width', size * 2);
+  } else if (o instanceof SVGTextElement) {
+    o.style.setProperty('font-size', (parseInt(size) + 7) + 'pt');
+  } else if (o instanceof HTMLTextAreaElement) {
+    var scale = doc.transform.baseVal.getItem(1).matrix.a;
+    o.style.setProperty('font-size', ((parseInt(size) + 7) * scale) + 'pt');
+  } // TODO image
+}
+
+function getObjectSize(o) {
+  if (o instanceof SVGPathElement ||
+      o instanceof SVGLineElement) {
+    return o.getAttribute('stroke-width') / 2;
+  } else if (o instanceof SVGTextElement) {
+    return o.style.getPropertyValue('font-size').replace(/pt$/,'') - 7;
+  } else { // TODO image
+    return undefined;
+  }
+}
+
+function onSizeButtonClick(button, e) {
+  e.stopPropagation();
+  var circle = button.childNodes[button.childNodes.length - 2];
+  var size = circle.getAttribute('r');
+  currentSize = size;
+  console.log("current size is now " + currentSize);
+  makeToolbarUnclicked(sizeToolbar);
+  makeButtonClicked(button);
+  // update selected objects
+  var cs = selection.childNodes;
+  startAction(new SizeObjects(cs, currentSize));
+  currentAction[0].redo();
+  finishAction();
+};
+
 function switchColor(colorButton) {
   var circle = colorButton.lastElementChild;
   var color = circle.getAttribute('fill');
@@ -742,19 +825,39 @@ function switchToNextColor(currentColorButton) {
   console.log('done');
 }
 
+function setObjectColor(o, color) {
+  if (color === undefined) {
+    color = currentColor;
+  }
+  if (o instanceof SVGPathElement ||
+      o instanceof SVGLineElement) {
+    o.setAttribute('stroke', color);
+  } else if (o instanceof SVGTextElement) {
+    o.style.setProperty('fill', color);
+  } else if (o instanceof HTMLTextAreaElement) {
+    o.style.setProperty('color', color);
+  }
+}
+
+function getObjectColor(o) {
+  if (o instanceof SVGPathElement ||
+      o instanceof SVGLineElement) {
+    return o.getAttribute('stroke');
+  } else if (o instanceof SVGTextElement) {
+    return o.style.getPropertyValue('fill');
+  } else if (o instanceof HTMLTextAreaElement) {
+    return o.style.setProperty('color');
+  }
+}
+
 function onColorButtonClick(button, e) {
   e.stopPropagation();
   switchColor(button);
   // update selected objects
   var cs = selection.childNodes;
-  for (var i = cs.length-1; i >= 0; i--) {
-    if (cs[i] instanceof SVGPathElement ||
-	cs[i] instanceof SVGLineElement) {
-      cs[i].setAttribute('stroke', currentColor);
-    } else if (cs[i] instanceof SVGTextElement) {
-      cs[i].style.setProperty('fill', currentColor);
-    }
-  }
+  startAction(new ColorObjects(cs, currentColor));
+  currentAction[0].redo();
+  finishAction();
 }
 
 function addColor(newColor) {
@@ -962,7 +1065,7 @@ var tools = {
       draggedObject = document.createElementNS(svgNS, 'path');
       draggedObject.setAttribute('d', 'M ' + docCoords.x + ' ' + docCoords.y);
       draggedObject.setAttribute('stroke', currentColor);
-      draggedObject.setAttribute('stroke-width', currentSize * 2);
+      setObjectSize(draggedObject);
       selection.appendChild(draggedObject);
       deferredMovement = { x: 0, y: 0 };
       startAction(new AddObject(draggedObject));
@@ -1017,7 +1120,7 @@ var tools = {
       draggedObject.setAttribute('y2', docCoords.y);
       // style
       draggedObject.setAttribute('stroke', currentColor);
-      draggedObject.setAttribute('stroke-width', currentSize * 2);
+      setObjectSize(draggedObject);
       // bookkeeping
       draggedObject.setAttribute('tail-id', tailID);
       // put arrow in selection
@@ -1123,8 +1226,10 @@ var tools = {
 	hide(selectRect);
 	selectRectStart = undefined;
 	selectRectEnd = undefined;
-      } else { // dragging selected objects
+      } else if (currentAction[0].nonzero()) { // dragged selected objects
         finishAction();
+      } else { // just clicked, no drag
+	cancelAction();
       }
     }
   },
@@ -1306,7 +1411,7 @@ function onkeydown(e) {
 window.onload = function() {
   svg = document.getElementsByTagName("svg")[0];
   iconStyle = document.getElementById('icon-style').outerHTML;
-  var idVars = 'docAndSelection doc selection selectRect zoomFactor textToolInput helpWindow settingsWindow colorInput panScrollX panScrollY invertScrollZoom zoomStep enableFisheye fisheyeSettings fisheyeBorderSquash fisheyeBorderThickness fisheyeTimeout fisheyeBorders fisheyeShadow colorToolbar actionsToolbar deleteButton undoButton redoButton'.split(' ')
+  var idVars = 'docAndSelection doc selection selectRect zoomFactor textToolInput helpWindow settingsWindow colorInput panScrollX panScrollY invertScrollZoom zoomStep enableFisheye fisheyeSettings fisheyeBorderSquash fisheyeBorderThickness fisheyeTimeout fisheyeBorders fisheyeShadow sizeToolbar colorToolbar actionsToolbar deleteButton undoButton redoButton'.split(' ')
   for (var i = idVars.length-1; i >= 0; i--) {
     var id = idVars[i].replace(/[A-Z]/g, function(m) { return '-' + m.toLowerCase(); });
     console.log(id);
@@ -1435,31 +1540,13 @@ window.onload = function() {
     };
     return true;
   });
-  var sizeToolbar = document.getElementById("size-toolbar");
   forEachToolbarButton(sizeToolbar, function(button) {
     var circle = button.childNodes[button.childNodes.length - 2];
     var size = circle.getAttribute('r');
     if (isButtonClicked(button)) {
       currentSize = size;
     }
-    button.onclick = function(e) {
-      e.stopPropagation();
-      currentSize = size;
-      console.log("current size is now " + currentSize);
-      makeToolbarUnclicked(sizeToolbar);
-      makeButtonClicked(button);
-      // update selected objects
-      // TODO factor out relationship between currentSize and element-specific properties
-      var cs = selection.childNodes;
-      for (var i = cs.length-1; i >= 0; i--) {
-	if (cs[i] instanceof SVGPathElement ||
-	    cs[i] instanceof SVGLineElement) {
-	  cs[i].setAttribute('stroke-width', currentSize * 2);
-	} else if (cs[i] instanceof SVGTextElement) {
-	  cs[i].style.setProperty('font-size', (parseInt(currentSize) + 7) + 'pt');
-	}
-      }
-    };
+    button.onclick = onSizeButtonClick.bind(this, button);
     return true;
   });
   forEachToolbarButton(colorToolbar, function(button) {

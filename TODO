@@ -6,7 +6,7 @@ Key:
 > more information (not a subtask)
 
 = bugfixes
- - make undo/redo apply to size/color changes
+ # make undo/redo apply to size/color changes
  - copy tool breaks when trying to copy arrow-connected objects
  - disabling fisheye panning in Firefox temporarily breaks the pan tool until another tool is activated
  - panning with the scroll wheel/gesture doesn't pan the selection
