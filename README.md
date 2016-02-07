@@ -14,6 +14,8 @@ Please note that this dedication applies to the application, and not to works cr
 
 SVG Whiteboard is a simple drawing application written as a standalone webpage. It requires no external resources besides a reasonably modern web browser. So you can download it, and use it from your own computer without even being connected to the Internet. You can save your work to a file on your computer, and that file will also contain the complete application. If you send that file to someone else, they will be able to open and edit it in the same way you did: with just a web browser.
 
+Try it online: http://www.uofr.net/~willdb/software/whiteboard.html
+
 ## Features
 
  - Draw freehand lines.
