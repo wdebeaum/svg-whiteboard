@@ -20,7 +20,7 @@ Try it online: http://www.uofr.net/~willdb/software/whiteboard.html
 
  - Draw freehand lines.
  - Type text.
- - Import image files.
+ - Import image or text files.
  - Draw connecting arrows among any of the above three kinds of objects, which stay connected when the objects move.
  - Five pen widths/text sizes.
  - Default palette of 7 colors.

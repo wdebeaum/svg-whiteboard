@@ -10,12 +10,13 @@ Key:
  - disabling fisheye panning in Firefox temporarily breaks the pan tool until another tool is activated
  - panning with the scroll wheel/gesture doesn't pan the selection
  - "move" icon alignment on Firefox
+ - don't XML-escape imported text files (readAsText seems to do this in Chrome but not Firefox?)
  ? delete sometimes doesn't work?
  ? trashcan vs. eraser
 
 = enhancements of existing features
  ? make new open a new tab/window with a blank document (using data URI) instead of clearing the current document
- - import text files as well as images (using current text tool settings)
+ # import text files as well as images (using current text tool settings)
  ? import on drop event
  ? resize imported images (add a handle when selected?)
  ? calibration boxes for scroll wheel/gesture for pan/zoom

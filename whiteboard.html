@@ -759,6 +759,75 @@ function updateFisheye() {
   fisheyeShadow.setAttribute('transform', 'scale(' + pageDims.width + ',' + pageDims.height + ')');
 }
 
+// import functions
+// TODO handle more errors
+
+function importImageFile(file, onImageError) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var uri = e.target.result;
+    var imageElement = document.createElementNS(svgNS, 'image');
+    // also need to load the image into an Image to get its natural
+    // dimensions
+    var imageObject = new Image();
+    imageObject.onerror = onImageError;
+    imageObject.onload = function() {
+      anchorSelection();
+      // center the image in the current view
+      var pageDims = svg.getBoundingClientRect();
+      var pageCoords = {
+	pageX: (pageDims.width - imageObject.naturalWidth) / 2,
+	pageY: (pageDims.height - imageObject.naturalHeight) / 2
+      };
+      var docCoords = getEventCoordsRelativeToDoc(pageCoords);
+      imageElement.setAttribute('x', docCoords.x);
+      imageElement.setAttribute('y', docCoords.y);
+      imageElement.setAttribute('width', imageObject.naturalWidth);
+      imageElement.setAttribute('height', imageObject.naturalHeight);
+      imageElement.setAttributeNS(xlinkNS, 'href', uri);
+      selection.appendChild(imageElement);
+      console.log("finished importing image file " + file.name);
+    };
+    imageObject.src = uri;
+  };
+  reader.readAsDataURL(file);
+}
+
+function importTextFile(file) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var text = e.target.result;
+    if (!isHidden(textToolInput)) {
+      finishTextInput();
+    }
+    var pageDims = svg.getBoundingClientRect();
+    var pageCenter = { x: pageDims.width / 2, y: pageDims.height / 2 };
+    // TODO try to measure the width and height of the text and center it
+    newTextInput(pageCenter);
+    textToolInput.value = text;
+    finishTextInput();
+    console.log("finished importing text file " + file.name);
+  };
+  reader.readAsText(file);
+}
+
+function importFile(file) {
+  console.log("importing file " + file.name + "; type is " + file.type);
+  if (file.type == 'text/plain') {
+    importTextFile(file);
+  } else if (file.type == '') {
+    // try importing as image, failing that, as text
+    importImageFile(file, function() {
+      console.log("failed to import file " + file.name + " as image; trying text");
+      importTextFile(file);
+    });
+  } else if (/^image\//.test(file.type)) {
+    importImageFile(file, function(e) { alert("Error importing image"); });
+  } else {
+    alert("Error: imported file is of non-image, non-plaintext type: " + file.type);
+  }
+}
+
 // event handlers for each tool
 // (except onwheel, which is mostly the same for all tools)
 var tools = {
@@ -1140,33 +1209,7 @@ window.onload = function() {
   };
   importInput.onchange = function(e) {
     var file = importInput.files[0];
-    console.log("importing file " + file.name);
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      var uri = e.target.result;
-      var imageElement = document.createElementNS(svgNS, 'image');
-      // also need to load the image into an Image to get its natural dimensions
-      var imageObject = new Image();
-      imageObject.onload = function() {
-	anchorSelection();
-	// center the image in the current view
-	var pageDims = svg.getBoundingClientRect();
-	var pageCoords = {
-	  pageX: (pageDims.width - imageObject.naturalWidth) / 2,
-	  pageY: (pageDims.height - imageObject.naturalHeight) / 2
-	};
-	var docCoords = getEventCoordsRelativeToDoc(pageCoords);
-	imageElement.setAttribute('x', docCoords.x);
-	imageElement.setAttribute('y', docCoords.y);
-	imageElement.setAttribute('width', imageObject.naturalWidth);
-	imageElement.setAttribute('height', imageObject.naturalHeight);
-	imageElement.setAttributeNS(xlinkNS, 'href', uri);
-	selection.appendChild(imageElement);
-	console.log("finished importing file " + file.name);
-      };
-      imageObject.src = uri;
-    };
-    reader.readAsDataURL(file);
+    importFile(file);
   };
   var saveButton = document.getElementById("save-button");
   saveButton.onclick = function(e) {
@@ -1606,7 +1649,7 @@ window.onload = function() {
   <dt><svg class="inline icon"><use xlink:href="#open-icon"></use></svg> Open...</dt>
    <dd>Lets you load the contents of a whiteboard you previously saved. Loading the file directly into your web browser will have essentially the same effect.</dd>
   <dt><svg class="inline icon"><use xlink:href="#import-icon"></use></svg> Import...</dt>
-   <dd>Lets you load an image file as an object to place on the whiteboard.</dd>
+   <dd>Lets you load an image or text file as an object to place on the whiteboard. Text files become normal text objects that you can edit.</dd>
   <dt><svg class="inline icon"><use xlink:href="#save-icon"></use></svg> Save...</dt>
    <dd>Lets you save the whiteboard (both the contents <em>and the application itself</em>) to your computer.</dd>
   <dt><svg class="inline icon"><use xlink:href="#settings-icon"></use></svg> Settings...</dt>
