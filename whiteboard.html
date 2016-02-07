@@ -253,30 +253,7 @@ function makeToolbarUnclicked(elem) {
 var svgNS = "http://www.w3.org/2000/svg";
 var xlinkNS = "http://www.w3.org/1999/xlink";
 var svg = undefined;
-var docAndSelection = undefined;
-var doc = undefined;
-var selection = undefined;
-var selectRect = undefined;
-var selectRectStart = undefined;
-var zoomFactor = undefined;
 var iconStyle = undefined;
-var textToolInput = undefined;
-var helpWindow = undefined;
-var settingsWindow = undefined;
-var colorInput = undefined;
-var panScrollX = undefined;
-var panScrollY = undefined;
-var invertScrollZoom = undefined;
-var zoomStep = undefined;
-var enableFisheye = undefined;
-var fisheyeSettings = undefined;
-var fisheyeBorderSquash = undefined;
-var fisheyeBorderThickness = undefined;
-var fisheyeTimeout = undefined;
-var fisheyeBorders = undefined;
-var fisheyeShadow = undefined;
-var colorToolbar = undefined;
-var deleteButton = undefined;
 var currentTool = 'draw';
 var currentSize = 5;
 var currentColor = '#0000c0';
@@ -1095,29 +1072,13 @@ function onwheel(e) {
 
 window.onload = function() {
   svg = document.getElementsByTagName("svg")[0];
-  docAndSelection = document.getElementById("doc-and-selection");
-  doc = document.getElementById("doc");
-  selection = document.getElementById("selection");
-  selectRect = document.getElementById("select-rect");
-  zoomFactor = document.getElementById("zoom-factor");
   iconStyle = document.getElementById('icon-style').outerHTML;
-  textToolInput = document.getElementById('text-tool-input');
-  helpWindow = document.getElementById("help-window");
-  settingsWindow = document.getElementById("settings-window");
-  colorInput = document.getElementById("color-input");
-  panScrollX = document.getElementById("pan-scroll-x");
-  panScrollY = document.getElementById("pan-scroll-y");
-  invertScrollZoom = document.getElementById("invert-scroll-zoom");
-  zoomStep = document.getElementById("zoom-step");
-  enableFisheye = document.getElementById("enable-fisheye");
-  fisheyeSettings = document.getElementById("fisheye-settings");
-  fisheyeBorderSquash = document.getElementById("fisheye-border-squash");
-  fisheyeBorderThickness = document.getElementById("fisheye-border-thickness");
-  fisheyeTimeout = document.getElementById("fisheye-timeout");
-  fisheyeBorders = document.getElementById("fisheye-borders");
-  fisheyeShadow = document.getElementById("fisheye-shadow");
-  colorToolbar = document.getElementById("color-toolbar");
-  deleteButton = document.getElementById('delete-button');
+  var idVars = 'docAndSelection doc selection selectRect zoomFactor textToolInput helpWindow settingsWindow colorInput panScrollX panScrollY invertScrollZoom zoomStep enableFisheye fisheyeSettings fisheyeBorderSquash fisheyeBorderThickness fisheyeTimeout fisheyeBorders fisheyeShadow colorToolbar deleteButton'.split(' ')
+  for (var i = idVars.length-1; i >= 0; i--) {
+    var id = idVars[i].replace(/[A-Z]/g, function(m) { return '-' + m.toLowerCase(); });
+    console.log(id);
+    window[idVars[i]] = document.getElementById(id);
+  }
   var menu = document.getElementById("menu");
   hide(menu);
   var menuButton = document.getElementById("menu-button");
