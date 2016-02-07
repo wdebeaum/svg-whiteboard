@@ -399,22 +399,40 @@ function AddObject(o) {
 AddObject.prototype.undo = function() { this.addedObject.remove(); };
 AddObject.prototype.redo = function() { doc.appendChild(this.addedObject); };
 
-function DeleteObject(o) {
-  this.deletedObject = o;
+function ensureArray(collection) {
+  var ret = [];
+  if (collection instanceof NodeList) {
+    // copy NodeList to Array to make it not a live collection
+    for (var i = 0; i < collection.length; i++) {
+      ret.push(collection[i]);
+    }
+  } else if (collection instanceof Array) {
+    ret = collection;
+  } else if (collection) {
+    ret = [collection];
+  }
+  return ret;
 }
-DeleteObject.prototype.undo=function() { doc.appendChild(this.deletedObject); };
-DeleteObject.prototype.redo=function() { this.deletedObject.remove(); };
+
+function DeleteObjects(o) {
+  this.deletedObjects = ensureArray(o);
+}
+DeleteObjects.prototype.add = function(o) {
+  this.deletedObjects = this.deletedObjects.concat(ensureArray(o));
+};
+DeleteObjects.prototype.undo = function() {
+  for (var i = 0; i < this.deletedObjects.length; i++) {
+    doc.appendChild(this.deletedObjects[i]);
+  }
+};
+DeleteObjects.prototype.redo = function() {
+  for (var i = 0; i < this.deletedObjects.length; i++) {
+    this.deletedObjects[i].remove();
+  }
+};
 
 function MoveObjects(o) {
-  if (o instanceof NodeList) {
-    // copy NodeList to Array to make it not a live collection
-    this.movedObjects = [];
-    for (var i = 0; i < o.length; i++) {
-      this.movedObjects.push(o[i]);
-    }
-  } else {
-    this.movedObjects = o;
-  }
+  this.movedObjects = ensureArray(o);
   this.movement = { x: 0, y: 0 };
 }
 MoveObjects.prototype.add = function(currentMovement) {
@@ -585,6 +603,9 @@ function removeSelectionConnections() {
       if (headObject.parentNode === selection ||
 	  tailObject.parentNode === selection) {
 	doc.removeChild(cs[i]);
+	if (currentAction && currentAction[0] instanceof DeleteObjects) {
+	  currentAction[0].add(cs[i]);
+	}
       }
     }
   }
@@ -592,6 +613,9 @@ function removeSelectionConnections() {
 
 function removeAllChildren(node) {
   var cs = node.childNodes;
+  if (currentAction && currentAction[0] instanceof DeleteObjects) {
+    currentAction[0].add(cs);
+  }
   for (var i = cs.length-1; i >= 0; i--) {
     node.removeChild(cs[i]);
   }
@@ -1445,10 +1469,12 @@ window.onload = function() {
   });
   deleteButton.onclick = function(e) {
     e.stopPropagation();
+    startAction(new DeleteObjects());
     // remove connections to the selection
     removeSelectionConnections();
     // remove all children of the selection node
     removeAllChildren(selection);
+    finishAction();
   }
   var uiGroup = document.getElementById("ui");
   uiGroup.onmouseover = function() {
