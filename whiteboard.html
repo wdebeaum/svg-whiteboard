@@ -1423,35 +1423,37 @@ function onkeydown(e) {
   }
 }
 
+function toggleMenu() {
+  toggleButtonClickedness(menuButton);
+  toggleDisplay(menu);
+  mouseIsOverUI = false;
+}
+
 window.onload = function() {
   svg = document.getElementsByTagName("svg")[0];
   iconStyle = document.getElementById('icon-style').outerHTML;
-  var idVars = 'docAndSelection doc selection selectRect zoomFactor textToolInput helpWindow settingsWindow colorInput panScrollX panScrollY invertScrollZoom zoomStep enableFisheye fisheyeSettings fisheyeBorderSquash fisheyeBorderThickness fisheyeTimeout fisheyeBorders fisheyeShadow sizeToolbar colorToolbar actionsToolbar deleteButton undoButton redoButton'.split(' ')
+  var idVars = 'docAndSelection doc selection selectRect zoomFactor textToolInput helpWindow settingsWindow colorInput panScrollX panScrollY invertScrollZoom zoomStep enableFisheye fisheyeSettings fisheyeBorderSquash fisheyeBorderThickness fisheyeTimeout fisheyeBorders fisheyeShadow sizeToolbar colorToolbar actionsToolbar deleteButton undoButton redoButton menu menuButton'.split(' ')
   for (var i = idVars.length-1; i >= 0; i--) {
     var id = idVars[i].replace(/[A-Z]/g, function(m) { return '-' + m.toLowerCase(); });
     window[idVars[i]] = document.getElementById(id);
   }
-  var menu = document.getElementById("menu");
   hide(menu);
-  var menuButton = document.getElementById("menu-button");
   menuButton.onclick = function(e) {
     e.stopPropagation();
-    toggleButtonClickedness(menuButton);
-    toggleDisplay(menu);
+    toggleMenu();
+    mouseIsOverUI = true;
   };
   var newButton = document.getElementById("new-button");
   newButton.onclick = function(e) {
     e.stopPropagation();
-    toggleButtonClickedness(menuButton);
-    toggleDisplay(menu);
+    toggleMenu();
     clearDocument();
   };
   var openButton = document.getElementById("open-button");
   var fileInput = document.getElementById("file-input");
   openButton.onclick = function(e) {
     e.stopPropagation();
-    toggleButtonClickedness(menuButton);
-    toggleDisplay(menu);
+    toggleMenu();
     fileInput.click();
   };
   var fileOutput = document.getElementById("file-output");
@@ -1486,8 +1488,7 @@ window.onload = function() {
   var importInput = document.getElementById("import-input");
   importButton.onclick = function(e) {
     e.stopPropagation();
-    toggleButtonClickedness(menuButton);
-    toggleDisplay(menu);
+    toggleMenu();
     importInput.click();
   };
   importInput.onchange = function(e) {
@@ -1497,8 +1498,7 @@ window.onload = function() {
   var saveButton = document.getElementById("save-button");
   saveButton.onclick = function(e) {
     e.stopPropagation();
-    toggleButtonClickedness(menuButton);
-    toggleDisplay(menu);
+    toggleMenu();
     fileOutput.removeAttribute('href'); // don't include recursive copies
     // don't include cursor image
     var oldStyle = svg.getAttribute('style');
@@ -1517,15 +1517,13 @@ window.onload = function() {
   var helpButton = document.getElementById("help-button");
   helpButton.onclick = function(e) {
     e.stopPropagation();
-    toggleButtonClickedness(menuButton);
-    toggleDisplay(menu);
+    toggleMenu();
     show(helpWindow);
   };
   var settingsButton = document.getElementById("settings-button");
   settingsButton.onclick = function(e) {
     e.stopPropagation();
-    toggleButtonClickedness(menuButton);
-    toggleDisplay(menu);
+    toggleMenu();
     show(settingsWindow);
   };
   var mainToolbar = document.getElementById("main-toolbar");
