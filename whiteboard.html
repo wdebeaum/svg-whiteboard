@@ -805,7 +805,6 @@ function switchToNextColor(currentColorButton) {
     // not supplied, look up by class
     currentColorButton = document.getElementsByClassName('clicked color')[0];
   }
-  console.log(currentColorButton);
   if (!currentColorButton) {
     // no clicked color, pick the first one and return
     switchColor(colorToolbar.childNodes[3]);
@@ -813,16 +812,12 @@ function switchToNextColor(currentColorButton) {
   } else {
     currentColorButton = currentColorButton.parentNode;
   }
-  console.log(currentColorButton);
   var nextColorButton = currentColorButton.nextSibling.nextSibling;
-  console.log(nextColorButton);
   if (!nextColorButton) {
     // wrap to beginning
     nextColorButton = colorToolbar.childNodes[3];
   }
-  console.log(nextColorButton);
   switchColor(nextColorButton);
-  console.log('done');
 }
 
 function setObjectColor(o, color) {
@@ -1212,7 +1207,6 @@ var tools = {
       } else { // dragging selected objects
 	var docMovement = getPageMovementRelativeToDoc(pageMovement);
         moveObjects(selection.childNodes, docMovement);
-	console.log('adding movement ' + JSON.stringify(docMovement) + ' to current action ' + currentAction);
 	currentAction[0].add(docMovement);
       }
     },
@@ -1393,7 +1387,7 @@ function onwheel(e) {
       delta.y *= pageDims.height;
       break;
   }
-  console.log(delta.x + ' ' + delta.y);
+  //console.log(delta.x + ' ' + delta.y);
   if (/^zoom-/.test(currentTool)) {
     var factor =
       Math.pow(zoomStep.value, (invertScrollZoom.checked ? 1 : -1) * delta.y / 53)
@@ -1435,7 +1429,6 @@ window.onload = function() {
   var idVars = 'docAndSelection doc selection selectRect zoomFactor textToolInput helpWindow settingsWindow colorInput panScrollX panScrollY invertScrollZoom zoomStep enableFisheye fisheyeSettings fisheyeBorderSquash fisheyeBorderThickness fisheyeTimeout fisheyeBorders fisheyeShadow sizeToolbar colorToolbar actionsToolbar deleteButton undoButton redoButton'.split(' ')
   for (var i = idVars.length-1; i >= 0; i--) {
     var id = idVars[i].replace(/[A-Z]/g, function(m) { return '-' + m.toLowerCase(); });
-    console.log(id);
     window[idVars[i]] = document.getElementById(id);
   }
   var menu = document.getElementById("menu");
