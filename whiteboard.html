@@ -1256,8 +1256,28 @@ var tools = {
 	}
       }
       anchorSelection();
+      var idmap = {};
       for (var i = 0; i < clones.length; i++) {
+	if (clones[i].hasAttribute('id')) { // don't clone IDs
+	  var oldID = clones[i].id;
+	  clones[i].removeAttribute('id');
+	  var newID = ensureID(clones[i]);
+	  idmap[oldID] = newID;
+	}
 	selection.appendChild(clones[i]);
+      }
+      // if we copied any arrows, map their head/tail IDs
+      for (var i = 0; i < clones.length; i++) {
+	if (clones[i] instanceof SVGLineElement) {
+	  var oldHeadID = clones[i].getAttribute('head-id');
+	  var oldTailID = clones[i].getAttribute('tail-id');
+	  if (oldHeadID in idmap) {
+	    clones[i].setAttribute('head-id', idmap[oldHeadID]);
+	  }
+	  if (oldTailID in idmap) {
+	    clones[i].setAttribute('tail-id', idmap[oldTailID]);
+	  }
+	}
       }
       draggedObject = selection;
     },
