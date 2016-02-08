@@ -9,7 +9,9 @@ Key:
  # make undo/redo apply to size/color changes
  - copy tool breaks when trying to copy arrow-connected objects
  - disabling fisheye panning in Firefox temporarily breaks the pan tool until another tool is activated
- - panning with the scroll wheel/gesture doesn't pan the selection
+ # panning with the scroll wheel/gesture doesn't pan the selection
+ - selection doesn't show in greyed out fisheye border
+  > because the shadow filter only goes as far as the screen area
  - "move" icon alignment on Firefox
  - don't XML-escape imported text files (readAsText seems to do this in Chrome but not Firefox?)
  ? delete sometimes doesn't work?
