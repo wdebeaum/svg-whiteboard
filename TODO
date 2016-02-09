@@ -25,7 +25,7 @@ X cancelled
  X make new open a new tab/window with a blank document (using data URI) instead of clearing the current document
   > would make it inconsistent with "open"
  # import text files as well as images (using current text tool settings)
- - import on drop event
+ # import on drop event
  - resize imported images
   . add a handle when selected
   . set of scale factors corresponding to pen/text sizes

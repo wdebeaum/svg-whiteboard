@@ -984,7 +984,7 @@ function updateFisheye() {
 // import functions
 // TODO handle more errors
 
-function importImageFile(file, onImageError) {
+function importImageFile(file, pageCoords, onImageError) {
   var reader = new FileReader();
   reader.onload = function(e) {
     var uri = e.target.result;
@@ -995,12 +995,20 @@ function importImageFile(file, onImageError) {
     imageObject.onerror = onImageError;
     imageObject.onload = function() {
       anchorSelection();
-      // center the image in the current view
-      var pageDims = svg.getBoundingClientRect();
-      var pageCoords = {
-	pageX: (pageDims.width - imageObject.naturalWidth) / 2,
-	pageY: (pageDims.height - imageObject.naturalHeight) / 2
-      };
+      if (!pageCoords) {
+	// center the image in the current view
+	var pageDims = svg.getBoundingClientRect();
+	pageCoords = {
+	  pageX: (pageDims.width - imageObject.naturalWidth) / 2,
+	  pageY: (pageDims.height - imageObject.naturalHeight) / 2
+	};
+      } else {
+	// get top left from given center
+	pageCoords = {
+	  pageX: pageCoords.pageX - imageObject.naturalWidth / 2,
+	  pageY: pageCoords.pageY - imageObject.naturalHeight / 2
+	};
+      }
       var docCoords = getEventCoordsRelativeToDoc(pageCoords);
       imageElement.setAttribute('x', docCoords.x);
       imageElement.setAttribute('y', docCoords.y);
@@ -1017,36 +1025,43 @@ function importImageFile(file, onImageError) {
   reader.readAsDataURL(file);
 }
 
-function importTextFile(file) {
+function importTextString(string, pageCoords) {
+  if (!isHidden(textToolInput)) {
+    finishTextInput();
+  }
+  newTextInput(pageCoords);
+  textToolInput.value = string;
+  finishTextInput();
+}
+
+function importTextFile(file, pageCoords) {
   var reader = new FileReader();
   reader.onload = function(e) {
     var text = e.target.result;
-    if (!isHidden(textToolInput)) {
-      finishTextInput();
+    if (!pageCoords) {
+      var pageDims = svg.getBoundingClientRect();
+      var pageCenter = { x: pageDims.width / 2, y: pageDims.height / 2 };
+      // TODO try to measure the width and height of the text and center it
+      pageCoords = pageCenter;
     }
-    var pageDims = svg.getBoundingClientRect();
-    var pageCenter = { x: pageDims.width / 2, y: pageDims.height / 2 };
-    // TODO try to measure the width and height of the text and center it
-    newTextInput(pageCenter);
-    textToolInput.value = text;
-    finishTextInput();
+    importTextString(text, pageCoords);
     console.log("finished importing text file " + file.name);
   };
   reader.readAsText(file);
 }
 
-function importFile(file) {
+function importFile(file, pageCoords) {
   console.log("importing file " + file.name + "; type is " + file.type);
   if (file.type == 'text/plain') {
-    importTextFile(file);
+    importTextFile(file, pageCoords);
   } else if (file.type == '') {
     // try importing as image, failing that, as text
-    importImageFile(file, function() {
+    importImageFile(file, pageCoords, function() {
       console.log("failed to import file " + file.name + " as image; trying text");
-      importTextFile(file);
+      importTextFile(file, pageCoords);
     });
   } else if (/^image\//.test(file.type)) {
-    importImageFile(file, function(e) { alert("Error importing image"); });
+    importImageFile(file, pageCoords, function(e) { alert("Error importing image"); });
   } else {
     alert("Error: imported file is of non-image, non-plaintext type: " + file.type);
   }
@@ -1423,6 +1438,64 @@ function onkeydown(e) {
   }
 }
 
+function typeIsImportable(type) {
+  return (type == '' ||
+	  /^text\/plain$/.test(type) ||
+	  /^image\//.test(type));
+}
+
+function ondrop(e) {
+  console.log('ondrop');
+  e.stopPropagation();
+  e.preventDefault();
+  var pageCoords = { x: e.pageX, y: e.pageY };
+  var dt = e.dataTransfer;
+  if ('items' in dt) { // chrome, "standard"
+    for (var i = 0; i < dt.items.length; i++) {
+      var item = dt.items[i];
+      // accept only text/plain, image/*, and unknown type
+      if (!typeIsImportable(item.type)) {
+	console.log('skipping drop data item of type ' + item.type);
+	continue;
+      }
+      switch (item.kind) {
+	case 'string':
+	  item.getAsString(function(string) {
+	    importTextString(string, pageCoords);
+	  });
+	  break;
+	case 'file':
+	  importFile(item.getAsFile(), e);
+	  break;
+	default:
+	  alert('unknown kind of data transfer item: ' + item.kind);
+      }
+    }
+  } else if ('mozItemCount' in dt) { // firefox
+    for (var i = 0; i < dt.mozItemCount; i++) {
+      //console.log('moz item ' + i);
+      var types = dt.mozTypesAt(i);
+      for (var j = 0; j < types.length; j++) {
+	/*console.log('  type ' + j + ' = ' + types[j]);
+	try {
+	  var data = dt.mozGetDataAt(types[j], i);
+	  console.log('    typeof data = ' + (typeof data));
+	  if (typeof data == 'object') {
+	    console.log('      constructor ' + data.constructor);
+	  }
+	} catch (ex) {}*/
+	if (types[j] == 'text/plain') {
+	  importTextString(dt.mozGetDataAt('text/plain', i), pageCoords);
+	  break;
+	} /* else {} firefox doesn't really support dropping image data */
+      }
+      //console.log('  text/html = ' + dt.mozGetDataAt('text/html', i));
+    }
+  } else { // fall back on getData('text/plain')
+    importTextString(dt.getData('text/plain'), pageCoords);
+  }
+}
+
 function toggleMenu() {
   toggleButtonClickedness(menuButton);
   toggleDisplay(menu);
@@ -1593,7 +1666,14 @@ window.onload = function() {
   svg.onwheel = onwheel;
   svg.onmouseup = onmouseup;
   svg.onclick = onMouseDownOrClick.bind(this, 'onclick');
-  svg.ondragstart = function(e) { e.preventDefault() };
+  var epd = function(e) { e.preventDefault() };
+  // prevent dragging from the document
+  svg.ondragstart = epd
+  // enable dragging to the document (confusing, innit?)
+  svg.ondragenter = epd;
+  svg.ondragover = epd;
+  // actually handle a drop
+  svg.ondrop = ondrop;
   doc.onmousedown = onMouseDownOrClick.bind(this, 'ondocmousedown');
   selection.onmousedown = onMouseDownOrClick.bind(this, 'onselectionmousedown');
 }
@@ -1940,7 +2020,7 @@ window.onload = function() {
   <dt><svg class="inline icon"><use xlink:href="#open-icon"></use></svg> Open...</dt>
    <dd>Lets you load the contents of a whiteboard you previously saved. Loading the file directly into your web browser will have essentially the same effect.</dd>
   <dt><svg class="inline icon"><use xlink:href="#import-icon"></use></svg> Import...</dt>
-   <dd>Lets you load an image or text file as an object to place on the whiteboard. Text files become normal text objects that you can edit.</dd>
+   <dd>Lets you load an image or text file as an object to place on the whiteboard. Text files become normal text objects that you can edit. You can also import text by dragging and dropping onto the whiteboard. In Chrome and Opera, you can import local images by dragging and dropping. In other browsers, and with non-local images, you will get the URL of the image as text instead.</dd>
   <dt><svg class="inline icon"><use xlink:href="#save-icon"></use></svg> Save...</dt>
    <dd>Lets you save the whiteboard (both the contents <em>and the application itself</em>) to your computer.</dd>
   <dt><svg class="inline icon"><use xlink:href="#settings-icon"></use></svg> Settings...</dt>
