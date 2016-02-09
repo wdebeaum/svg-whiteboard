@@ -1,8 +1,11 @@
 Key:
 = task grouping
 - ongoing or not started
+. alternative
+. options
 ? unsure whether I will start/continue to work on it
 # completed
+X cancelled
 > more information (not a subtask)
 
 = bugfixes
@@ -13,15 +16,19 @@ Key:
  - selection doesn't show in greyed out fisheye border
   > because the shadow filter only goes as far as the screen area
  - "move" icon alignment on Firefox
- - don't XML-escape imported text files (readAsText seems to do this in Chrome but not Firefox?)
+ X don't XML-escape imported text files (readAsText seems to do this in Chrome but not Firefox?)
+  > no, just old versions?
  ? delete sometimes doesn't work?
  ? trashcan vs. eraser
 
 = enhancements of existing features
- ? make new open a new tab/window with a blank document (using data URI) instead of clearing the current document
+ X make new open a new tab/window with a blank document (using data URI) instead of clearing the current document
+  > would make it inconsistent with "open"
  # import text files as well as images (using current text tool settings)
- ? import on drop event
- ? resize imported images (add a handle when selected?)
+ - import on drop event
+ - resize imported images
+  . add a handle when selected
+  . set of scale factors corresponding to pen/text sizes
  ? calibration boxes for scroll wheel/gesture for pan/zoom
  - preview fisheye border settings
  ? size palette settings
