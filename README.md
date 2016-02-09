@@ -44,7 +44,7 @@ Try it online: http://www.uofr.net/~willdb/software/whiteboard.html
 
 ## Browser support
 
-I test on the Firefox and Chrome browsers regularly. Opera probably also works. Less modern browsers like IE/Edge and Safari might break certain features, or break completely. Complain to Microsoft and Apple, tell them to get with the times and implement all the standard APIs that Mozilla and Google have!
+I test on the Firefox and Chrome browsers regularly. Less modern browsers like IE/Edge and Safari might break certain features, or break completely. Complain to Microsoft and Apple, tell them to get with the times and implement all the standard APIs that Mozilla and Google have!
 
 ## SVG Whiteboard is not...
 
