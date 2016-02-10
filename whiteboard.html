@@ -712,6 +712,8 @@ function getDocChild(targ) {
   return o;
 }
 
+// FIXME: if an arrow and only one of its connected objects is selected, only that end of the arrow should move
+// FIXME 2: sometimes an object will become disconnected even though its ID still matches the arrow's head-id or tail-id; maybe related to copying?
 function moveObjects(os, docMovement) {
   // translate each object, and consolidate its transform list
   for (var i = os.length-1; i >= 0; i--) {
@@ -761,7 +763,11 @@ function setObjectSize(o, size) {
   } else if (o instanceof HTMLTextAreaElement) {
     var scale = doc.transform.baseVal.getItem(1).matrix.a;
     o.style.setProperty('font-size', ((parseInt(size) + 7) * scale) + 'pt');
-  } // TODO image
+  } else if (o instanceof SVGImageElement) {
+    var scale = size / 5.0;
+    o.transform.baseVal.getItem(0).matrix.a = scale;
+    o.transform.baseVal.getItem(0).matrix.d = scale;
+  }
 }
 
 function getObjectSize(o) {
@@ -770,7 +776,14 @@ function getObjectSize(o) {
     return o.getAttribute('stroke-width') / 2;
   } else if (o instanceof SVGTextElement) {
     return o.style.getPropertyValue('font-size').replace(/pt$/,'') - 7;
-  } else { // TODO image
+  } else if (o instanceof SVGImageElement) {
+    // FIXME it's not this simple, see above
+    if (o.transform.baseVal.numberOfItems == 0) {
+      return 5;
+    } else {
+      return o.transform.baseVal.getItem(0).matrix.a * 5;
+    }
+  } else {
     return undefined;
   }
 }
@@ -999,23 +1012,23 @@ function importImageFile(file, pageCoords, onImageError) {
 	// center the image in the current view
 	var pageDims = svg.getBoundingClientRect();
 	pageCoords = {
-	  pageX: (pageDims.width - imageObject.naturalWidth) / 2,
-	  pageY: (pageDims.height - imageObject.naturalHeight) / 2
-	};
-      } else {
-	// get top left from given center
-	pageCoords = {
-	  pageX: pageCoords.pageX - imageObject.naturalWidth / 2,
-	  pageY: pageCoords.pageY - imageObject.naturalHeight / 2
+	  pageX: pageDims.width / 2,
+	  pageY: pageDims.height / 2
 	};
       }
       var docCoords = getEventCoordsRelativeToDoc(pageCoords);
-      imageElement.setAttribute('x', docCoords.x);
-      imageElement.setAttribute('y', docCoords.y);
+      // put the center of the image at the origin of its local coordinate
+      // system
+      imageElement.setAttribute('x', -imageObject.naturalWidth / 2);
+      imageElement.setAttribute('y', -imageObject.naturalHeight / 2);
+      // translate it to the desired coordinates
+      imageElement.setAttribute('transform', 'translate(' + docCoords.x + ',' + docCoords.y + ') scale(1)');
       imageElement.setAttribute('width', imageObject.naturalWidth);
       imageElement.setAttribute('height', imageObject.naturalHeight);
       imageElement.setAttributeNS(xlinkNS, 'href', uri);
       doc.appendChild(imageElement);
+      imageElement.transform.baseVal.consolidate();
+      setObjectSize(imageElement);
       startAction(new AddObject(imageElement));
       finishAction();
       console.log("finished importing image file " + file.name);
@@ -1121,7 +1134,11 @@ var tools = {
   connect: {
     ondocmousedown: function(e, docCoords) {
       anchorSelection(); // get rid of old selection
-      var tailID = ensureID(getDocChild(e.target));
+      var target = getDocChild(e.target);
+      if (target instanceof SVGLineElement) { // no arrows from other arrows
+	return;
+      }
+      var tailID = ensureID(target);
       draggedObject = document.createElementNS(svgNS, 'line'); // arrow
       // position
       draggedObject.setAttribute('x1', docCoords.x);

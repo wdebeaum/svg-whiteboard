@@ -19,6 +19,8 @@ X cancelled
  X don't XML-escape imported text files (readAsText seems to do this in Chrome but not Firefox?)
   > no, just old versions?
  ? delete sometimes doesn't work?
+ ? sometimes head object of arrow can't be found?
+ - see FIXME comments on moveObjects, maybe related to above two
  ? trashcan vs. eraser
 
 = enhancements of existing features
@@ -27,8 +29,8 @@ X cancelled
  # import text files as well as images (using current text tool settings)
  # import on drop event
  - resize imported images
-  . add a handle when selected
-  . set of scale factors corresponding to pen/text sizes
+  ? add a handle when selected
+  # set of scale factors corresponding to pen/text sizes
  ? calibration boxes for scroll wheel/gesture for pan/zoom
  - preview fisheye border settings
  ? size palette settings
