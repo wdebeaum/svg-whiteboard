@@ -143,6 +143,31 @@ input[type="url"] {
 }
 </style>
 <script type="text/javascript">
+// very simple attempt to generate pronounceable names
+var vowels = 'aeiou'; // no y
+var consonants = 'bcdfghjklmnprstvwxz'; // no q, y
+function generateRandomName(inputID) {
+  var name = '';
+  var cv = 's';
+  for (var i = Math.floor(Math.random() * 6) + 5; // 5-10 letters at random
+       i > 0;
+       i--) {
+    // alternate consonants and vowels, starting at random
+    switch (cv) {
+      case 's': cv = (Math.random() < 0.5 ? 'c' : 'v'); break;
+      case 'c': cv = 'v'; break;
+      case 'v': cv = 'c'; break;
+    }
+    // add a random consonant or vowel
+    var str = (cv == 'c' ? consonants : vowels);
+    name += str[Math.floor(Math.random() * str.length)];
+  }
+  if (inputID) {
+    document.getElementById(inputID).value = name;
+  }
+  return name;
+}
+
 function show(elem) {
   elem.style.display = '';
 }
@@ -1519,6 +1544,12 @@ function ondrop(e) {
   }
 }
 
+function onChangeRemoteUserName(input) { /* TODO */ }
+function addUser() { /* TODO */ }
+function removeUser() { /* TODO */ }
+function startCollaborating() { /* TODO */ }
+function stopCollaborating() { /* TODO */ }
+
 function toggleMenu() {
   toggleButtonClickedness(menuButton);
   toggleDisplay(menu);
@@ -2075,15 +2106,15 @@ window.onload = function() {
  </div>
  <hr>
  <h2>Collaboration</h2>
- <label>Local user name is <input type="text" id="local-user-name" placeholder="/^[\w-]+$/"></label>. <button id="generate-local-user-name">generate random name</button><br>
+ <label>Local user name is <input type="text" id="local-user-name" placeholder="/^[\w-]+$/"></label>. <button onclick="generateRandomName('local-user-name')">generate random name</button><br>
  <h3>Remote users</h3>
  <ol id="remote-users">
-  <li>Send the user <label>named <input type="text" placeholder="/^[\w-]+$/"></label> (<button>generate random name</button>) <label>this URI:<br>
-    <input type="url" placeholder="Enter both local and remote user names to compute the URI." readonly></label></li>
-  <li><button>+ add</button> <button>- remove</button></li>
+  <li>Send the user <label>named <input type="text" id="remote-user-1-name" placeholder="/^[\w-]+$/" onchange="onChangeRemoteUserName(this)"></label> (<button onclick="generateRandomName('remote-user-1-name')">generate random name</button>) <label>this URI:<br>
+    <input type="url" id="remote-user-1-url" placeholder="Enter both local and remote user names to compute the URI." readonly></label></li>
+  <li><button onclick="addUser()">+ add</button> <button onclick="removeUser()">- remove</button></li>
  </ol>
- <button>|&gt; start collaborating</button>
- <button>|| stop collaborating</button>
+ <button onclick="startCollaborating()">|&gt; start collaborating</button>
+ <button onclick="stopCollaborating()">|| stop collaborating</button>
  <h3>WebRTC settings</h3>
  <p>Leave these alone unless you know what you're doing.</p>
  <label>Signaling relay URI:<br>
