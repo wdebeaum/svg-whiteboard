@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html><head><title>chat</title><style type="text/css">
+
+a {
+  border: 1px solid black;
+  margin: 1ex;
+  padding: 0.5ex;
+}
+
+</style><script type="text/javascript">
+
+var form = undefined;
+var listenXHR = undefined;
+var sendXHR = undefined;
+
+function ensureValidUserName(n) {
+  if (!/^[\w-]+$/.test(n)) {
+    var msg = "Invalid user name: " + n + "\nUser names should contain only letters, numbers, hyphens, and underscores.";
+    alert(msg);
+    throw new Error(msg);
+  }
+  return n;
+}
+
+function listen() {
+  var ruser = ensureValidUserName(form['remote-user-name'].value);
+  console.log('listening to ' + ruser);
+  listenXHR = new XMLHttpRequest();
+  listenXHR.onload = function() {
+    form['chat-history'].value += ruser + ': ' + listenXHR.responseText;
+    listen();
+  };
+  var url = 'http://www.uofr.net/~willdb/cgi-bin/relay.pl?k=' + ruser;
+  listenXHR.open('GET', url, true);
+  listenXHR.send();
+}
+
+function send() {
+  var msg = form['message'].value;
+  var luser = ensureValidUserName(form['local-user-name'].value);
+  console.log('sending from ' + luser);
+  form['chat-history'].value += luser + ": " + msg + "\n";
+  form['message'].value = '';
+  var sendXHR = new XMLHttpRequest();
+  var url =
+    'http://www.uofr.net/~willdb/cgi-bin/relay.pl?k=' + luser +
+      '&m=' + encodeURIComponent(msg);
+  sendXHR.open('GET', url, true);
+  sendXHR.send();
+}
+
+window.onload = function() {
+  form = document.getElementById('form');
+  form.onsubmit = function(e) {
+    console.log('submit');
+    e.preventDefault()
+    send();
+  };
+};
+
+</script></head><body>
+
+<h1>chat</h1>
+<p>A totally insecure two-way chat, demoing <code>relay.pl</code>.</p>
+
+<form id="form">
+<label>Local user name: <input type="text" name="local-user-name"></label><br>
+<label>Remote user name: <input type="text" name="remote-user-name"></label>
+<a onclick="listen()">Listen</a>
+<br>
+<textarea name="chat-history" cols="80" rows="10" readonly></textarea><br>
+<label>Message: <input type="text" name="message"></label>
+<a onclick="send()">Send</a>
+</form>
+
+</body></html>
