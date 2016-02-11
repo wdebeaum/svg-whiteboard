@@ -135,6 +135,12 @@ input[type="number"] {
 input[type="color"] {
   vertical-align: middle;
 }
+input[type="url"] {
+  width: 100%;
+}
+#ice-servers {
+  width: 100%;
+}
 </style>
 <script type="text/javascript">
 function show(elem) {
@@ -2067,7 +2073,25 @@ window.onload = function() {
   <label>Continue fisheye effect for <input id="fisheye-timeout" type="number" min="0" value="250"> milliseconds after panning with scroll wheel/gesture.</label>
    <!-- TODO preview? -->
  </div>
- <!-- TODO collaboration settings -->
+ <hr>
+ <h2>Collaboration</h2>
+ <label>Local user name is <input type="text" id="local-user-name" placeholder="/^[\w-]+$/"></label>. <button id="generate-local-user-name">generate random name</button><br>
+ <h3>Remote users</h3>
+ <ol id="remote-users">
+  <li>Send the user <label>named <input type="text" placeholder="/^[\w-]+$/"></label> (<button>generate random name</button>) <label>this URI:<br>
+    <input type="url" placeholder="Enter both local and remote user names to compute the URI." readonly></label></li>
+  <li><button>+ add</button> <button>- remove</button></li>
+ </ol>
+ <button>|&gt; start collaborating</button>
+ <button>|| stop collaborating</button>
+ <h3>WebRTC settings</h3>
+ <p>Leave these alone unless you know what you're doing.</p>
+ <label>Signaling relay URI:<br>
+  <input type="url" id="signaling-uri" value="http://www.uofr.net/~willdb/cgi-bin/relay.pl">
+ </label>
+ <label>ICE (STUN/TURN) server list:<br>
+ <textarea id="ice-servers" placeholder="Enter the JSON array to pass to RTCPeerConnection.">[]</textarea></label>
+ <label><input type="checkbox" id="enable-signaling-fallback"> Fall back to using the signaling relay as the main connection if ICE fails.</label>
  <hr>
  <button onclick="hide(settingsWindow)">dismiss</button>
  <button onclick="restoreDefaultSettings()">restore defaults</button>

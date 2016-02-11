@@ -52,7 +52,7 @@ X cancelled
   > complicated by browser security considerations
   ? ^X ^C ^V keyboard shortcuts
  - collaboration via WebRTC/STUN/TURN/ICE/acronym-of-the-week
-  ? add corresponding section to settings
+  # add corresponding section to settings
   ? with A/V/text chat inset
  - move tool drag from either end of an arrow = move just that end (switch back to arrow tool? or just use arrow tool for this instead of move?)
   ? need marker for tail of arrow
