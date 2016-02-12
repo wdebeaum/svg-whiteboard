@@ -1633,7 +1633,7 @@ function startCollaborating(server) {
     pc.createOffer().then(function(offer) {
       return pc.setLocalDescription(offer);
     }).then(function() {
-      sr.send({ desc: pc.localDescription });
+      sr.write({ desc: pc.localDescription });
     }).catch(logError);
   };
   pc.ondatachannel = function(e) {
@@ -2254,17 +2254,17 @@ window.onload = function() {
  </label>
  <label>ICE (STUN/TURN) server list:<br>
  <textarea id="ice-servers" placeholder="Enter the JSON array to pass in the iceServers argument to RTCPeerConnection.">[
-{urls:'stun:stun.ekiga.net'},
-{urls:'stun:stun.iptel.org'},
-{urls:'stun:stun.l.google.com:19302'},
-{urls:'stun:stun1.l.google.com:19302'},
-{urls:'stun:stun2.l.google.com:19302'},
-{urls:'stun:stun3.l.google.com:19302'},
-{urls:'stun:stun4.l.google.com:19302'},
+{"urls":"stun:stun.ekiga.net"},
+{"urls":"stun:stun.iptel.org"},
+{"urls":"stun:stun.l.google.com:19302"},
+{"urls":"stun:stun1.l.google.com:19302"},
+{"urls":"stun:stun2.l.google.com:19302"},
+{"urls":"stun:stun3.l.google.com:19302"},
+{"urls":"stun:stun4.l.google.com:19302"},
 {
-        urls: 'turn:numb.viagenie.ca',
-        credential: 'muazkh',
-        username: 'webrtc@live.com'
+        "urls": "turn:numb.viagenie.ca",
+        "credential": "muazkh",
+        "username": "webrtc@live.com"
 }
 ]</textarea></label>
  <label><input type="checkbox" id="enable-signaling-fallback"> Fall back to using the signaling relay as the main connection if ICE fails.</label>
