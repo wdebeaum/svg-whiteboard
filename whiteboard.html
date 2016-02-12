@@ -1542,13 +1542,19 @@ SignalingRelay.prototype.receive = function() {
     that.ondata(JSON.parse(that.receiveXHR.responseText));
     that.receive();
   };
-  this.receiveXHR.open('GET', this.url + '?k=' + this.remoteUser);
+  this.receiveXHR.open('GET', this.url + '?k=' + this.remoteUser, true);
   this.receiveXHR.send();
 }
 
 SignalingRelay.prototype.write = function(data) {
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', this.url + '?k=' + this.localUser + '&m=' + encodeURIComponent(JSON.stringify(data)));
+  xhr.open(
+    'GET',
+    this.url +
+      '?k=' + this.localUser +
+      '&m=' + encodeURIComponent(JSON.stringify(data)),
+    true
+  );
   xhr.send();
 }
 
@@ -1683,7 +1689,7 @@ function toggleMenu() {
 window.onload = function() {
   svg = document.getElementsByTagName("svg")[0];
   iconStyle = document.getElementById('icon-style').outerHTML;
-  var idVars = 'docAndSelection doc selection selectRect zoomFactor textToolInput helpWindow settingsWindow colorInput panScrollX panScrollY invertScrollZoom zoomStep enableFisheye fisheyeSettings fisheyeBorderSquash fisheyeBorderThickness fisheyeTimeout fisheyeBorders fisheyeShadow localUserName blankWhiteboardUri remoteUsers signalingUri iceServers enableSignalingFallback sizeToolbar colorToolbar actionsToolbar deleteButton undoButton redoButton menu menuButton'.split(' ')
+  var idVars = 'docAndSelection doc selection selectRect zoomFactor textToolInput helpWindow settingsWindow colorInput panScrollX panScrollY invertScrollZoom zoomStep enableFisheye fisheyeSettings fisheyeBorderSquash fisheyeBorderThickness fisheyeTimeout fisheyeBorders fisheyeShadow localUserName blankWhiteboardUri remoteUsers signalingRelayUri iceServers enableSignalingFallback sizeToolbar colorToolbar actionsToolbar deleteButton undoButton redoButton menu menuButton'.split(' ')
   for (var i = idVars.length-1; i >= 0; i--) {
     var id = idVars[i].replace(/[A-Z]/g, function(m) { return '-' + m.toLowerCase(); });
     window[idVars[i]] = document.getElementById(id);
@@ -2244,7 +2250,7 @@ window.onload = function() {
  <h3>WebRTC settings</h3>
  <p>Leave these alone unless you know what you're doing.</p>
  <label>Signaling relay URI:<br>
-  <input type="url" id="signaling-uri" value="http://www.uofr.net/~willdb/cgi-bin/relay.pl">
+  <input type="url" id="signaling-relay-uri" value="http://www.uofr.net/~willdb/cgi-bin/relay.pl">
  </label>
  <label>ICE (STUN/TURN) server list:<br>
  <textarea id="ice-servers" placeholder="Enter the JSON array to pass in the iceServers argument to RTCPeerConnection.">[
