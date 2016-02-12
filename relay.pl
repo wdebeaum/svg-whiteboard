@@ -12,7 +12,7 @@ my $fifo_timeout = 86400; # seconds (1 day)
 
 # HTTP response headers
 print "Content-type: text/plain\r\n" .
-      "Access-control-allow-origin: *\r\n" . #allow cross-origin requests (CORS)
+      "Access-Control-Allow-Origin: *\r\n" . #allow cross-origin requests (CORS)
       "\r\n";
 
 # clean stale fifos, but keep going if we fail

@@ -1539,7 +1539,11 @@ SignalingRelay.prototype.receive = function() {
   var that = this;
   this.receiveXHR = new XMLHttpRequest();
   this.receiveXHR.onload = function() {
-    that.ondata(JSON.parse(that.receiveXHR.responseText));
+    try {
+      that.ondata(JSON.parse(that.receiveXHR.responseText));
+    } catch (err) {
+      console.log(err.message);
+    }
     that.receive();
   };
   this.receiveXHR.open('GET', this.url + '?k=' + this.remoteUser, true);
