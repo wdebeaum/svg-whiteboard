@@ -143,31 +143,6 @@ input[type="url"] {
 }
 </style>
 <script type="text/javascript">
-// very simple attempt to generate pronounceable names
-var vowels = 'aeiou'; // no y
-var consonants = 'bcdfghjklmnprstvwxz'; // no q, y
-function generateRandomName(inputID) {
-  var name = '';
-  var cv = 's';
-  for (var i = Math.floor(Math.random() * 6) + 5; // 5-10 letters at random
-       i > 0;
-       i--) {
-    // alternate consonants and vowels, starting at random
-    switch (cv) {
-      case 's': cv = (Math.random() < 0.5 ? 'c' : 'v'); break;
-      case 'c': cv = 'v'; break;
-      case 'v': cv = 'c'; break;
-    }
-    // add a random consonant or vowel
-    var str = (cv == 'c' ? consonants : vowels);
-    name += str[Math.floor(Math.random() * str.length)];
-  }
-  if (inputID) {
-    document.getElementById(inputID).value = name;
-  }
-  return name;
-}
-
 function show(elem) {
   elem.style.display = '';
 }
@@ -1544,11 +1519,160 @@ function ondrop(e) {
   }
 }
 
-function onChangeRemoteUserName(input) { /* TODO */ }
+function ensureValidUserName(n) {
+  if (!/^[\w-]+$/.test(n)) {
+    var msg = "Invalid user name: " + n + "\nUser names should contain only letters, numbers, hyphens, and underscores.";
+    alert(msg);
+    throw new Error(msg);
+  }
+  return n;
+}
+
+function SignalingRelay(url, localUser, remoteUser) {
+  this.url = url;
+  this.localUser = ensureValidUserName(localUser);
+  this.remoteUser = ensureValidUserName(remoteUser);
+  this.receive();
+}
+
+SignalingRelay.prototype.receive = function() {
+  var that = this;
+  this.receiveXHR = new XMLHttpRequest();
+  this.receiveXHR.onload = function() {
+    that.ondata(JSON.parse(that.receiveXHR.responseText));
+    that.receive();
+  };
+  this.receiveXHR.open('GET', this.url + '?k=' + this.remoteUser);
+  this.receiveXHR.send();
+}
+
+SignalingRelay.prototype.write = function(data) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', this.url + '?k=' + this.localUser + '&m=' + encodeURIComponent(JSON.stringify(data)));
+  xhr.send();
+}
+
+SignalingRelay.prototype.close = function() {
+  this.receiveXHR.abort();
+}
+
+// very simple attempt to generate pronounceable names
+var vowels = 'aeiou'; // no y
+var consonants = 'bcdfghjklmnprstvwxz'; // no q, y
+function generateRandomName(inputID) {
+  var name = '';
+  var cv = 's';
+  for (var i = Math.floor(Math.random() * 6) + 5; // 5-10 letters at random
+       i > 0;
+       i--) {
+    // alternate consonants and vowels, starting at random
+    switch (cv) {
+      case 's': cv = (Math.random() < 0.5 ? 'c' : 'v'); break;
+      case 'c': cv = 'v'; break;
+      case 'v': cv = 'c'; break;
+    }
+    // add a random consonant or vowel
+    var str = (cv == 'c' ? consonants : vowels);
+    name += str[Math.floor(Math.random() * str.length)];
+  }
+  if (inputID) {
+    var input = document.getElementById(inputID)
+    input.value = name;
+    if (/^remote-user-\d+-name$/.test(input.id)) {
+      onChangeRemoteUserName(input);
+    } else { // local user name
+      onChangeLocal();
+    }
+  }
+  return name;
+}
+
+function onChangeRemoteUserName(input) {
+  var id = input.id.replace(/-name$/, '-uri');
+  var uriInput = document.getElementById(id);
+  if (/^[\w-]+/.test(input.value) && /^[\w-]+/.test(localUserName.value)) {
+    uriInput.value = blankWhiteboardUri.value + '#' + input.value + '+' + localUserName.value;
+  } else {
+    uriInput.value = '';
+  }
+}
+
+function onChangeLocal() {
+  var input;
+  for (var i = 1; input = document.getElementById('remote-user-' + i + '-name'); i++) {
+    onChangeRemoteUserName(input);
+  }
+}
+
 function addUser() { /* TODO */ }
 function removeUser() { /* TODO */ }
-function startCollaborating() { /* TODO */ }
-function stopCollaborating() { /* TODO */ }
+
+RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
+RTCSessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription;
+RTCIceCandidate = window.RTCIceCandidate || window.mozRTCIceCandidate;
+
+var sr;
+var pc;
+function startCollaborating(server) {
+  // TODO iterate over multiple remote users
+  var remoteUserName = document.getElementById('remote-user-1-name').value;
+  var logError = function(err) { console.log(err.name + ': ' + err.message); };
+  sr = new SignalingRelay(signalingRelayUri.value, localUserName.value, remoteUserName);
+  pc = new RTCPeerConnection({ iceServers: JSON.parse(iceServers.value) });
+  pc.onicecandidate = function(e) {
+    sr.write({ candidate: e.candidate });
+  };
+  pc.onnegotiationneeded = function(e) {
+    // FIXME I think Firefox and Chrome have different ways of structuring these callbacks
+    pc.createOffer().then(function(offer) {
+      return pc.setLocalDescription(offer);
+    }).then(function() {
+      sr.send({ desc: pc.localDescription });
+    }).catch(logError);
+  };
+  pc.ondatachannel = function(e) {
+    console.log('connected to ' + remoteUserName);
+    window.dataChannel = e.channel;
+    window.dataChannel.onmessage = function(e) {
+      console.log('message from ' + remoteUserName + ': ' + e.data);
+    }
+  }
+
+  sr.ondata = function(data) {
+    if (data.desc) {
+      var desc = data.desc;
+      switch (desc.type) {
+	case 'offer':
+	  pc.setRemoteDescription(new RTCSessionDescription(desc)).
+	  then(function() {
+	    return pc.createAnswer();
+	  }).then(function(answer) {
+	    return pc.setLocalDescription(answer);
+	  }).then(function() {
+	    sr.write({ desc: pc.localDescription });
+	  }).catch(logError);
+	  break;
+	case 'answer':
+	  pc.setRemoteDescription(new RTCSessionDescription(desc)).
+	  catch(logError);
+	  break;
+	default:
+	  log("Unsupported SDP type.");
+      }
+    } else {
+      pc.addIceCandidate(new RTCIceCandidate(data.candidate)).
+      catch(logError);
+    }
+  };
+  if (server) {
+    pc.createDataChannel(remoteUserName);
+  }
+}
+
+function stopCollaborating() {
+  pc.close();
+  sr.close();
+}
 
 function toggleMenu() {
   toggleButtonClickedness(menuButton);
@@ -1559,7 +1683,7 @@ function toggleMenu() {
 window.onload = function() {
   svg = document.getElementsByTagName("svg")[0];
   iconStyle = document.getElementById('icon-style').outerHTML;
-  var idVars = 'docAndSelection doc selection selectRect zoomFactor textToolInput helpWindow settingsWindow colorInput panScrollX panScrollY invertScrollZoom zoomStep enableFisheye fisheyeSettings fisheyeBorderSquash fisheyeBorderThickness fisheyeTimeout fisheyeBorders fisheyeShadow sizeToolbar colorToolbar actionsToolbar deleteButton undoButton redoButton menu menuButton'.split(' ')
+  var idVars = 'docAndSelection doc selection selectRect zoomFactor textToolInput helpWindow settingsWindow colorInput panScrollX panScrollY invertScrollZoom zoomStep enableFisheye fisheyeSettings fisheyeBorderSquash fisheyeBorderThickness fisheyeTimeout fisheyeBorders fisheyeShadow localUserName blankWhiteboardUri remoteUsers signalingUri iceServers enableSignalingFallback sizeToolbar colorToolbar actionsToolbar deleteButton undoButton redoButton menu menuButton'.split(' ')
   for (var i = idVars.length-1; i >= 0; i--) {
     var id = idVars[i].replace(/[A-Z]/g, function(m) { return '-' + m.toLowerCase(); });
     window[idVars[i]] = document.getElementById(id);
@@ -2106,11 +2230,13 @@ window.onload = function() {
  </div>
  <hr>
  <h2>Collaboration</h2>
- <label>Local user name is <input type="text" id="local-user-name" placeholder="/^[\w-]+$/"></label>. <button onclick="generateRandomName('local-user-name')">generate random name</button><br>
+ <label>Local user name is <input type="text" id="local-user-name" placeholder="/^[\w-]+$/" onchange="onChangeLocal()"></label>. <button onclick="generateRandomName('local-user-name')">generate random name</button><br>
  <h3>Remote users</h3>
+ <label>Blank whiteboard URI:<br>
+   <input type="url" id="blank-whiteboard-uri" value="http://www.uofr.net/~willdb/software/whiteboard.html" onchange="onChangeLocal()"></label>
  <ol id="remote-users">
   <li>Send the user <label>named <input type="text" id="remote-user-1-name" placeholder="/^[\w-]+$/" onchange="onChangeRemoteUserName(this)"></label> (<button onclick="generateRandomName('remote-user-1-name')">generate random name</button>) <label>this URI:<br>
-    <input type="url" id="remote-user-1-url" placeholder="Enter both local and remote user names to compute the URI." readonly></label></li>
+    <input type="url" id="remote-user-1-uri" placeholder="Enter both local and remote user names to compute the URI." readonly></label></li>
   <li><button onclick="addUser()">+ add</button> <button onclick="removeUser()">- remove</button></li>
  </ol>
  <button onclick="startCollaborating()">|&gt; start collaborating</button>
@@ -2121,7 +2247,20 @@ window.onload = function() {
   <input type="url" id="signaling-uri" value="http://www.uofr.net/~willdb/cgi-bin/relay.pl">
  </label>
  <label>ICE (STUN/TURN) server list:<br>
- <textarea id="ice-servers" placeholder="Enter the JSON array to pass to RTCPeerConnection.">[]</textarea></label>
+ <textarea id="ice-servers" placeholder="Enter the JSON array to pass in the iceServers argument to RTCPeerConnection.">[
+{urls:'stun:stun.ekiga.net'},
+{urls:'stun:stun.iptel.org'},
+{urls:'stun:stun.l.google.com:19302'},
+{urls:'stun:stun1.l.google.com:19302'},
+{urls:'stun:stun2.l.google.com:19302'},
+{urls:'stun:stun3.l.google.com:19302'},
+{urls:'stun:stun4.l.google.com:19302'},
+{
+        urls: 'turn:numb.viagenie.ca',
+        credential: 'muazkh',
+        username: 'webrtc@live.com'
+}
+]</textarea></label>
  <label><input type="checkbox" id="enable-signaling-fallback"> Fall back to using the signaling relay as the main connection if ICE fails.</label>
  <hr>
  <button onclick="hide(settingsWindow)">dismiss</button>
