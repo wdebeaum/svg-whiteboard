@@ -1532,6 +1532,7 @@ function SignalingRelay(url, localUser, remoteUser) {
   this.url = url;
   this.localUser = ensureValidUserName(localUser);
   this.remoteUser = ensureValidUserName(remoteUser);
+  this.writeBuffer = [];
   setTimeout(this.receive.bind(this), 100);
 }
 
@@ -1556,18 +1557,32 @@ SignalingRelay.prototype.receive = function() {
   this.receiveXHR.send();
 }
 
+SignalingRelay.prototype.sendBufferedMessages = function() {
+  if (this.writeBuffer.length > 0) {
+    var text = this.writeBuffer.shift();
+    var xhr = new XMLHttpRequest();
+    // once we've sent this message, recurse to send the rest of them
+    xhr.onload = this.sendBufferedMessages.bind(this);
+    xhr.onerror = function(e) { console.log(e); };
+    console.log('sending to ' + this.remoteUser + ' via signaling relay: ' + text);
+    xhr.open(
+      'GET',
+      this.url +
+	'?k=' + this.localUser +
+	'&m=' + encodeURIComponent(text),
+      true
+    );
+    xhr.send();
+  }
+}
+
 SignalingRelay.prototype.write = function(data) {
-  var xhr = new XMLHttpRequest();
   var text = JSON.stringify(data);
-  console.log('sending to ' + this.remoteUser + ' via signaling relay: ' + text);
-  xhr.open(
-    'GET',
-    this.url +
-      '?k=' + this.localUser +
-      '&m=' + encodeURIComponent(text),
-    true
-  );
-  xhr.send();
+  this.writeBuffer.push(text);
+  // if we just pushed the only entry in the buffer, start sendBufferedMessages
+  if (this.writeBuffer.length == 1) {
+    this.sendBufferedMessages();
+  }
 }
 
 SignalingRelay.prototype.close = function() {
@@ -1640,7 +1655,11 @@ function startCollaborating(server) {
     pc = new RTCPeerConnection({ iceServers: JSON.parse(iceServers.value) });
     pc.onicecandidate = function(e) {
       console.log('onicecandidate');
-      sr.write({ candidate: e.candidate });
+      if (e.candidate) {
+	sr.write({ candidate: e.candidate });
+      } else {
+	console.log('null candidate');
+      }
     };
     pc.onnegotiationneeded = function(e) {
       console.log('onnegotiationneeded');
