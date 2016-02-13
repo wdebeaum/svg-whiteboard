@@ -8,7 +8,7 @@ use POSIX qw(mkfifo);
 # directory to make fifo files in
 my $fifo_dir = '../fifos';
 # time after which stale fifos are removed
-my $fifo_timeout = 86400; # seconds (1 day)
+my $fifo_timeout = 1; # days
 
 # HTTP response headers
 print "Content-type: text/plain\r\n" .
