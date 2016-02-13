@@ -1532,19 +1532,25 @@ function SignalingRelay(url, localUser, remoteUser) {
   this.url = url;
   this.localUser = ensureValidUserName(localUser);
   this.remoteUser = ensureValidUserName(remoteUser);
-  this.receive();
+  setTimeout(this.receive.bind(this), 100);
 }
 
 SignalingRelay.prototype.receive = function() {
+  console.log('listening to ' + this.remoteUser + ' via signaling relay');
   var that = this;
   this.receiveXHR = new XMLHttpRequest();
   this.receiveXHR.onload = function() {
     try {
-      that.ondata(JSON.parse(that.receiveXHR.responseText));
+      var text = that.receiveXHR.responseText;
+      console.log('received from ' + that.remoteUser + ' via signaling relay: ' + text);
+      that.ondata(JSON.parse(text));
     } catch (err) {
       console.log(err.message);
     }
     that.receive();
+  };
+  this.receiveXHR.onerror = function(e) {
+    console.log(e);
   };
   this.receiveXHR.open('GET', this.url + '?k=' + this.remoteUser, true);
   this.receiveXHR.send();
@@ -1552,11 +1558,13 @@ SignalingRelay.prototype.receive = function() {
 
 SignalingRelay.prototype.write = function(data) {
   var xhr = new XMLHttpRequest();
+  var text = JSON.stringify(data);
+  console.log('sending to ' + this.remoteUser + ' via signaling relay: ' + text);
   xhr.open(
     'GET',
     this.url +
       '?k=' + this.localUser +
-      '&m=' + encodeURIComponent(JSON.stringify(data)),
+      '&m=' + encodeURIComponent(text),
     true
   );
   xhr.send();
@@ -1628,23 +1636,32 @@ function startCollaborating(server) {
   var remoteUserName = document.getElementById('remote-user-1-name').value;
   var logError = function(err) { console.log(err.name + ': ' + err.message); };
   sr = new SignalingRelay(signalingRelayUri.value, localUserName.value, remoteUserName);
-  pc = new RTCPeerConnection({ iceServers: JSON.parse(iceServers.value) });
-  pc.onicecandidate = function(e) {
-    sr.write({ candidate: e.candidate });
-  };
-  pc.onnegotiationneeded = function(e) {
-    // FIXME I think Firefox and Chrome have different ways of structuring these callbacks
-    pc.createOffer().then(function(offer) {
-      return pc.setLocalDescription(offer);
-    }).then(function() {
-      sr.write({ desc: pc.localDescription });
-    }).catch(logError);
-  };
-  pc.ondatachannel = function(e) {
-    console.log('connected to ' + remoteUserName);
-    window.dataChannel = e.channel;
-    window.dataChannel.onmessage = function(e) {
-      console.log('message from ' + remoteUserName + ': ' + e.data);
+  var onhandshake = function() {
+    pc = new RTCPeerConnection({ iceServers: JSON.parse(iceServers.value) });
+    pc.onicecandidate = function(e) {
+      console.log('onicecandidate');
+      sr.write({ candidate: e.candidate });
+    };
+    pc.onnegotiationneeded = function(e) {
+      console.log('onnegotiationneeded');
+      // FIXME I think Firefox and Chrome have different ways of structuring these callbacks
+      pc.createOffer().then(function(offer) {
+	console.log('createOffer then');
+	return pc.setLocalDescription(offer);
+      }).then(function() {
+	console.log('createOffer then then');
+	sr.write({ desc: pc.localDescription });
+      }).catch(logError);
+    };
+    pc.ondatachannel = function(e) {
+      console.log('connected to ' + remoteUserName);
+      window.dataChannel = e.channel;
+      window.dataChannel.onmessage = function(e) {
+	console.log('received from ' + remoteUserName + ' via data channel: ' + e.data);
+      }
+    }
+    if (server) {
+      pc.createDataChannel(remoteUserName);
     }
   }
 
@@ -1655,10 +1672,13 @@ function startCollaborating(server) {
 	case 'offer':
 	  pc.setRemoteDescription(new RTCSessionDescription(desc)).
 	  then(function() {
+	    console.log('setRemoteDescription then');
 	    return pc.createAnswer();
 	  }).then(function(answer) {
+	    console.log('setRemoteDescription then then');
 	    return pc.setLocalDescription(answer);
 	  }).then(function() {
+	    console.log('setRemoteDescription then then then');
 	    sr.write({ desc: pc.localDescription });
 	  }).catch(logError);
 	  break;
@@ -1669,14 +1689,14 @@ function startCollaborating(server) {
 	default:
 	  log("Unsupported SDP type.");
       }
+    } else if (data.handshake) {
+      onhandshake();
     } else {
       pc.addIceCandidate(new RTCIceCandidate(data.candidate)).
       catch(logError);
     }
   };
-  if (server) {
-    pc.createDataChannel(remoteUserName);
-  }
+  sr.write({ handshake: true });
 }
 
 function stopCollaborating() {
