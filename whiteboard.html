@@ -275,7 +275,7 @@ var currentAction = undefined;
 var nextIDNumber = 0;
 function ensureID(element) {
   while (!element.id) {
-    var nextID = 'E' + nextIDNumber;
+    var nextID = (localUserName.value || 'E') + nextIDNumber;
     nextIDNumber++;
     if (!document.getElementById(nextID)) {
       element.id = nextID;
@@ -1519,6 +1519,55 @@ function ondrop(e) {
   }
 }
 
+function onDataChannelOpen(remoteUserName, e) {
+  console.log('connected to ' + remoteUserName);
+  window.dataChannel.onmessage = onmessage.bind(window, remoteUserName);
+  // send all objects in our document
+  // first anchor selection down to doc
+  anchorSelection();
+  // then make sure all doc children have IDs
+  var cs = doc.childNodes;
+  for (var i = cs.length-1; i >= 0; i--) {
+    if (cs[i] instanceof Element) {
+      ensureID(cs[i]);
+    }
+  }
+  // then send doc's innerHTML
+  var msg = JSON.stringify({ type: 'addObjects', outerHTML: doc.innerHTML });
+  console.log('sending to ' + remoteUserName + ' via data channel: ' + msg);
+  window.dataChannel.send(msg);
+}
+
+function onmessage(remoteUserName, e) {
+  var data = e.data.toString();
+  console.log('received from ' + remoteUserName + ' via data channel: ' + data);
+  try {
+    console.log('attempting to parse...');
+    data = JSON.parse(data);
+    console.log('parsed as: ' + JSON.stringify(data));
+    console.log('data.type = ' + data.type);
+    switch (data.type) {
+      case 'chat':
+	// TODO
+	console.log('incoming chat message: ' + data.message);
+	break;
+      case 'addObjects':
+	console.log('adding remote objects');
+	var frag = document.createDocumentFragment();
+	var elem = document.createElementNS(svgNS, 'g');
+	frag.appendChild(elem);
+	elem.outerHTML = data.outerHTML;
+	doc.appendChild(frag);
+	break;
+      // TODO
+      default:
+	console.log('unknown incoming data type: ' + data.type);
+    }
+  } catch (err) {
+    console.log(err);
+  }
+}
+
 function ensureValidUserName(n) {
   if (!/^[\w-]+$/.test(n)) {
     var msg = "Invalid user name: " + n + "\nUser names should contain only letters, numbers, hyphens, and underscores.";
@@ -1654,12 +1703,6 @@ function startCollaborating() {
   // if we're alphabetically first, we're the one to create the data channel
   var createChannel =
     (remoteUserName.localeCompare(localUserName.value, 'en') > 0);
-  var ondatachannelopen = function() {
-    console.log('connected to ' + remoteUserName);
-    window.dataChannel.onmessage = function(e) {
-      console.log('received from ' + remoteUserName + ' via data channel: ' + e.data);
-    }
-  };
   var onhandshake = function() {
     pc = new RTCPeerConnection({ iceServers: JSON.parse(iceServers.value) });
     pc.onicecandidate = function(e) {
@@ -1684,11 +1727,13 @@ function startCollaborating() {
     pc.ondatachannel = function(e) {
       console.log('got data channel from ' + remoteUserName);
       window.dataChannel = e.channel;
-      window.dataChannel.onopen = ondatachannelopen;
+      window.dataChannel.onopen =
+        onDataChannelOpen.bind(window, remoteUserName);
     }
     if (createChannel) {
       window.dataChannel = pc.createDataChannel(remoteUserName);
-      window.dataChannel.onopen = ondatachannelopen;
+      window.dataChannel.onopen =
+        onDataChannelOpen.bind(window, remoteUserName);
     }
   }
 
