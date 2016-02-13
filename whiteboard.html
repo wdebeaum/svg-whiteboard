@@ -144,6 +144,12 @@ input[type="url"] {
 </style>
 <script type="text/javascript">
 
+//// OO ////
+
+function defineMethods(constructor, methods) {
+  methods.map(function(fn) { constructor.prototype[fn.name] = fn; });
+}
+
 //// general UI manipulation ////
 
 function show(elem) {
@@ -275,6 +281,7 @@ var mouseIsOverUI = false;
 var actionsToUndo = [];
 var actionsToRedo = [];
 var currentAction = undefined;
+var peerConnections = {};
 
 // given an element, ensure it has an ID, and return its ID
 var nextIDNumber = 0;
@@ -287,6 +294,14 @@ function ensureID(element) {
     }
   }
   return element.id;
+}
+
+function ensureIDs(elements) {
+  return elements.map(function(e) { return ensureID(e); });
+}
+
+function getElementsByIds(ids) {
+  return ids.map(function(id) { return document.getElementById(id); });
 }
 
 /* like svg.checkEnclosure, but:
@@ -404,13 +419,22 @@ function copyDocTransformToSelection() {
   selection.setAttribute("transform", doc.getAttribute("transform"));
 }
 
-//// undo/redo actions/steps ////
+//// action steps ////
 
 function AddObject(o) {
   this.addedObject = o;
 }
-AddObject.prototype.undo = function() { this.addedObject.remove(); };
-AddObject.prototype.redo = function() { doc.appendChild(this.addedObject); };
+defineMethods(AddObject, [
+  function undo() { this.addedObject.remove(); },
+  function redo() { doc.appendChild(this.addedObject); },
+  function describe() {
+    ensureID(this.addedObject);
+    return { type: 'addObjects', outerHTML: this.addedObject.outerHTML };
+  },
+  function undescribe() {
+    return { type: 'deleteObjects', ids: [ensureID(this.addedObject)] };
+  }
+]);
 
 function ensureArray(collection) {
   var ret = [];
@@ -430,37 +454,69 @@ function ensureArray(collection) {
 function DeleteObjects(o) {
   this.deletedObjects = ensureArray(o);
 }
-DeleteObjects.prototype.add = function(o) {
-  this.deletedObjects = this.deletedObjects.concat(ensureArray(o));
-};
-DeleteObjects.prototype.undo = function() {
-  for (var i = 0; i < this.deletedObjects.length; i++) {
-    doc.appendChild(this.deletedObjects[i]);
+defineMethods(DeleteObjects, [
+  function add(o) {
+    this.deletedObjects = this.deletedObjects.concat(ensureArray(o));
+  },
+  function undo() {
+    for (var i = 0; i < this.deletedObjects.length; i++) {
+      doc.appendChild(this.deletedObjects[i]);
+    }
+  },
+  function redo() {
+    for (var i = 0; i < this.deletedObjects.length; i++) {
+      this.deletedObjects[i].remove();
+    }
+  },
+  function describe() {
+    return { type: 'deleteObjects',
+      ids: this.deletedObjects.map(function(o) { return ensureID(o); })
+    };
+  },
+  function undescribe() {
+    ensureIDs(this.deletedObjects);
+    return { type: 'addObjects',
+      outerHTML: this.deletedObjects.
+        map(function(o) { return o.outerHTML; }).
+	reduce(function(p, c) { return p + c; }, '')
+    };
   }
-};
-DeleteObjects.prototype.redo = function() {
-  for (var i = 0; i < this.deletedObjects.length; i++) {
-    this.deletedObjects[i].remove();
-  }
-};
+]);
 
 function MoveObjects(o) {
   this.movedObjects = ensureArray(o);
   this.movement = { x: 0, y: 0 };
 }
-MoveObjects.prototype.add = function(currentMovement) {
-  this.movement.x += currentMovement.x;
-  this.movement.y += currentMovement.y;
-};
-MoveObjects.prototype.nonzero = function() {
-  return (this.movement.x != 0 && this.movement.y != 0);
-};
-MoveObjects.prototype.undo = function() {
-  moveObjects(this.movedObjects, { x: -this.movement.x, y: -this.movement.y });
-};
-MoveObjects.prototype.redo = function() {
-  moveObjects(this.movedObjects, this.movement);
-};
+defineMethods(MoveObjects, [
+  function add(currentMovement) {
+    this.movement.x += currentMovement.x;
+    this.movement.y += currentMovement.y;
+  },
+  function nonzero() {
+    return (this.movement.x != 0 && this.movement.y != 0);
+  },
+  function negativeMovement() {
+    return { x: -this.movement.x, y: -this.movement.y };
+  },
+  function undo() {
+    moveObjects(this.movedObjects, this.negativeMovement());
+  },
+  function redo() {
+    moveObjects(this.movedObjects, this.movement);
+  },
+  function describe() {
+    return { type: 'moveObjects',
+      ids: this.movedObjects.map(function(o) { return o.id; }),
+      movement: this.movement
+    };
+  },
+  function undescribe() {
+    return { type: 'moveObjects',
+      ids: this.movedObjects.map(function(o) { return o.id; }),
+      movement: this.negativeMovement()
+    };
+  }
+]);
 
 function SizeObjects(o, newSize) {
   this.sizedObjects = ensureArray(o);
@@ -470,16 +526,30 @@ function SizeObjects(o, newSize) {
   }
   this.newSize = newSize;
 }
-SizeObjects.prototype.undo = function() {
-  for (var i = this.sizedObjects.length-1; i >= 0; i--) {
-    setObjectSize(this.sizedObjects[i], this.oldSizes[i]);
+defineMethods(SizeObjects, [
+  function undo() {
+    for (var i = this.sizedObjects.length-1; i >= 0; i--) {
+      setObjectSize(this.sizedObjects[i], this.oldSizes[i]);
+    }
+  },
+  function redo() {
+    for (var i = this.sizedObjects.length-1; i >= 0; i--) {
+      setObjectSize(this.sizedObjects[i], this.newSize);
+    }
+  },
+  function describe() {
+    return { type: 'sizeObjects',
+      ids: ensureIDs(this.sizedObjects),
+      size: this.newSize
+    };
+  },
+  function undescribe() {
+    return { type: 'sizeObjects',
+      ids: ensureIDs(this.sizedObjects),
+      sizes: this.oldSizes
+    };
   }
-};
-SizeObjects.prototype.redo = function() {
-  for (var i = this.sizedObjects.length-1; i >= 0; i--) {
-    setObjectSize(this.sizedObjects[i], this.newSize);
-  }
-};
+]);
 
 function ColorObjects(o, newColor) {
   this.coloredObjects = ensureArray(o);
@@ -489,16 +559,32 @@ function ColorObjects(o, newColor) {
   }
   this.newColor = newColor;
 }
-ColorObjects.prototype.undo = function() {
-  for (var i = this.coloredObjects.length-1; i >= 0; i--) {
-    setObjectColor(this.coloredObjects[i], this.oldColors[i]);
+defineMethods(ColorObjects, [
+  function undo() {
+    for (var i = this.coloredObjects.length-1; i >= 0; i--) {
+      setObjectColor(this.coloredObjects[i], this.oldColors[i]);
+    }
+  },
+  function redo() {
+    for (var i = this.coloredObjects.length-1; i >= 0; i--) {
+      setObjectColor(this.coloredObjects[i], this.newColor);
+    }
+  },
+  function describe() {
+    return { type: 'colorObjects',
+      ids: ensureIDs(this.coloredObjects),
+      color: this.newColor
+    };
+  },
+  function undescribe() {
+    return { type: 'colorObjects',
+      ids: ensureIDs(this.coloredObjects),
+      colors: this.oldColors
+    };
   }
-};
-ColorObjects.prototype.redo = function() {
-  for (var i = this.coloredObjects.length-1; i >= 0; i--) {
-    setObjectColor(this.coloredObjects[i], this.newColor);
-  }
-};
+]);
+
+//// actions ////
 
 function startAction(firstStep) {
   currentAction = [];
@@ -524,7 +610,7 @@ function finishAction() {
 function undoAction() {
   var action = actionsToUndo.pop();
   if (action) {
-    console.log('undoing action ' + JSON.stringify(action));
+    console.log('undoing action ' + JSON.stringify(action.map(function(a) { return a.describe(); })));
     for (var i = action.length-1; i >= 0; i--) {
       action[i].undo();
     }
@@ -535,11 +621,85 @@ function undoAction() {
 function redoAction() {
   var action = actionsToRedo.pop();
   if (action) {
-    console.log('redoing action ' + JSON.stringify(action));
+    console.log('redoing action ' + JSON.stringify(action.map(function(a) { return a.describe(); })));
     for (var i = 0; i < action.length; i++) {
       action[i].redo();
     }
     actionsToUndo.push(action);
+  }
+}
+
+function sendAction(action) {
+  var descriptions = action.map(function(a) { return a.describe(); });
+  for (var remoteUser in peerConnections) {
+    for (var i = 0; i < descriptions.length; i++) {
+      peerConnections[remoteUser].send(descriptions[i]);
+    }
+  }
+}
+
+function unsendAction(action) {
+  var descriptions = action.map(function(a) { return a.undescribe(); });
+  for (var remoteUser in peerConnections) {
+    for (var i = descriptions.length-1; i >= 0; i--) {
+      peerConnections[remoteUser].send(descriptions[i]);
+    }
+  }
+}
+
+function receiveStep(data) {
+  // TODO fold these into the step classes somehow? don't want to make remote
+  // actions undoable by local user
+  // TODO validation?
+  switch (data.type) {
+    case 'addObjects':
+      console.log('adding remote objects');
+      var svgDoc = (new DOMParser()).parseFromString(
+	'<svg xmlns="' + svgNS + '" xmlns:xlink="' + xlinkNS + '">' +
+	data.outerHTML +
+	'</svg>',
+	'image/svg+xml'
+      );
+      // FIXME order reversed
+      var cs = svgDoc.documentElement.childNodes;
+      for (var i = cs.length-1; i >= 0; i--) {
+	doc.appendChild(document.adoptNode(cs[i]));
+      }
+      break;
+    case 'deleteObjects':
+      getElementsByIds(data.ids).map(function(e) { e.remove(); });
+      break;
+    case 'moveObjects':
+      moveObjects(getElementsByIds(data.ids), data.movement);
+      break;
+    case 'sizeObjects':
+      if ('size' in data) {
+	getElementsByIds(data.ids).map(function(e) {
+	  setObjectSize(e, data.size);
+	});
+      } else if ('sizes' in data) {
+	getElementsByIds(data.ids).map(function(e, i) {
+	  setObjectSize(e, data.sizes[i]);
+	});
+      } else {
+	throw new Error("expected either size or sizes in sizeObjects step");
+      }
+      break;
+    case 'colorObjects':
+      if ('color' in data) {
+	getElementsByIds(data.ids).map(function(e) {
+	  setObjectColor(e, data.color);
+	});
+      } else if ('colors' in data) {
+	getElementsByIds(data.ids).map(function(e, i) {
+	  setObjectColor(e, data.colors[i]);
+	});
+      } else {
+	throw new Error("expected either color or colors in colorObjects step");
+      }
+      break;
+    default:
+      console.log('unknown incoming data type: ' + data.type);
   }
 }
 
@@ -1015,6 +1175,7 @@ function stopCollaborating() {
   for (k in peerConnections) {
     peerConnections[k].close();
   }
+  peerConnections = {};
 }
 
 function restoreDefaultSettings() {
@@ -1184,66 +1345,69 @@ function SignalingRelay(url, localUser, remoteUser) {
   this.receive();
 }
 
-SignalingRelay.prototype.receive = function() {
-  console.log('listening to ' + this.remoteUser + ' via signaling relay');
-  var that = this;
-  this.receiveXHR = new XMLHttpRequest();
-  this.receiveXHR.onload = function() {
-    try {
-      var text = that.receiveXHR.responseText;
-      console.log('received from ' + that.remoteUser + ' via signaling relay: ' + text);
-      that.ondata(JSON.parse(text));
-    } catch (err) {
-      console.log(err.message);
+defineMethods(SignalingRelay, [
+
+  function receive() {
+    console.log('listening to ' + this.remoteUser + ' via signaling relay');
+    var that = this;
+    this.receiveXHR = new XMLHttpRequest();
+    this.receiveXHR.onload = function() {
+      try {
+	var text = that.receiveXHR.responseText;
+	console.log('received from ' + that.remoteUser + ' via signaling relay: ' + text);
+	that.ondata(JSON.parse(text));
+      } catch (err) {
+	console.log(err.message);
+      }
+      that.receive();
+    };
+    this.receiveXHR.onerror = function(e) {
+      console.log(e);
+    };
+    this.receiveXHR.open('GET', this.url + '?k=' + this.remoteUser, true);
+    this.receiveXHR.send();
+  },
+
+  function sendBufferedMessages() {
+    if (this.writeBuffer.length > 0) {
+      var text = this.writeBuffer.shift();
+      var xhr = new XMLHttpRequest();
+      // once we've sent this message, recurse to send the rest of them
+      xhr.onload = this.sendBufferedMessages.bind(this);
+      xhr.onerror = function(e) { console.log(e); };
+      console.log('sending to ' + this.remoteUser + ' via signaling relay: ' + text);
+      xhr.open(
+	'GET',
+	this.url +
+	  '?k=' + this.localUser +
+	  '&m=' + encodeURIComponent(text),
+	true
+      );
+      xhr.send();
     }
-    that.receive();
-  };
-  this.receiveXHR.onerror = function(e) {
-    console.log(e);
-  };
-  this.receiveXHR.open('GET', this.url + '?k=' + this.remoteUser, true);
-  this.receiveXHR.send();
-}
+  },
 
-SignalingRelay.prototype.sendBufferedMessages = function() {
-  if (this.writeBuffer.length > 0) {
-    var text = this.writeBuffer.shift();
-    var xhr = new XMLHttpRequest();
-    // once we've sent this message, recurse to send the rest of them
-    xhr.onload = this.sendBufferedMessages.bind(this);
-    xhr.onerror = function(e) { console.log(e); };
-    console.log('sending to ' + this.remoteUser + ' via signaling relay: ' + text);
-    xhr.open(
-      'GET',
-      this.url +
-	'?k=' + this.localUser +
-	'&m=' + encodeURIComponent(text),
-      true
-    );
-    xhr.send();
+  function write(data) {
+    var text = JSON.stringify(data);
+    this.writeBuffer.push(text);
+    // if we just pushed the only entry in the buffer, start
+    // sendBufferedMessages
+    if (this.writeBuffer.length == 1) {
+      this.sendBufferedMessages();
+    }
+  },
+
+  function close() {
+    this.receiveXHR.abort();
   }
-}
 
-SignalingRelay.prototype.write = function(data) {
-  var text = JSON.stringify(data);
-  this.writeBuffer.push(text);
-  // if we just pushed the only entry in the buffer, start sendBufferedMessages
-  if (this.writeBuffer.length == 1) {
-    this.sendBufferedMessages();
-  }
-}
-
-SignalingRelay.prototype.close = function() {
-  this.receiveXHR.abort();
-}
+]);
 
 //// PeerConnection ////
 
 RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
 RTCSessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription;
 RTCIceCandidate = window.RTCIceCandidate || window.mozRTCIceCandidate;
-
-var peerConnections = {};
 
 function PeerConnection(remoteUser) {
   this.remoteUser = remoteUser;
@@ -1252,10 +1416,11 @@ function PeerConnection(remoteUser) {
   this.shouldCreateChannel =
     (this.remoteUser.localeCompare(this.localUser, 'en') > 0);
   this.iceServers = JSON.parse(iceServers.value);
+  this.isOpen = false;
   peerConnections[remoteUser] = this;
 }
 
-[ // begin PeerConnection methods
+defineMethods(PeerConnection, [
 
   function open() {
     this.relay = new SignalingRelay(
@@ -1271,6 +1436,7 @@ function PeerConnection(remoteUser) {
   },
 
   function close() {
+    this.isOpen = false;
     if (this.relay) {
       this.relay.close();
       delete this.relay;
@@ -1365,7 +1531,10 @@ function PeerConnection(remoteUser) {
 
   function onDataChannelOpen(e) {
     console.log('connected to ' + this.remoteUser);
+    this.relay.close();
+    delete this.relay;
     this.dataChannel.onmessage = this.onDataChannelMessage.bind(this);
+    this.isOpen = true;
     this.onopen();
   },
 
@@ -1382,7 +1551,7 @@ function PeerConnection(remoteUser) {
     }
   }
 
-].map(function(fn) { PeerConnection.prototype[fn.name] = fn; });
+]);
 
 //// tools ////
 
@@ -1843,23 +2012,8 @@ function onmessage(data) {
       // TODO
       console.log('incoming chat message: ' + data.message);
       break;
-    case 'addObjects':
-      console.log('adding remote objects');
-      var svgDoc = (new DOMParser()).parseFromString(
-	'<svg xmlns="' + svgNS + '" xmlns:xlink="' + xlinkNS + '">' +
-	data.outerHTML +
-	'</svg>',
-	'image/svg+xml'
-      );
-      // FIXME order reversed
-      var cs = svgDoc.documentElement.childNodes;
-      for (var i = cs.length-1; i >= 0; i--) {
-	doc.appendChild(document.adoptNode(cs[i]));
-      }
-      break;
-    // TODO
     default:
-      console.log('unknown incoming data type: ' + data.type);
+      receiveStep(data);
   }
 }
 
