@@ -51,9 +51,24 @@ X cancelled
  ? clipboard interaction with SVG objects (not just text in textToolInput)
   > complicated by browser security considerations
   ? ^X ^C ^V keyboard shortcuts
- - collaboration via WebRTC/STUN/TURN/ICE/acronym-of-the-week
+ # collaboration via WebRTC/STUN/TURN/ICE/acronym-of-the-week
+  - unhide collaboration settings by default (once it's more polished)
+  - document it in help text and README
   # add corresponding section to settings
-  ? with A/V/text chat inset
+  ? A/V/text chat inset
+  - more than two users
+   . star topology, hub relays messages
+   . completely connected graph, everyone sends only their own messages, to everyone else
+  ? separate menu item for collaboration settings
+  - collaboration status indicator
+   - merge start/stop buttons
+   - add/remove users on the fly
+   - notice when a connection drops, give option to restart it
+    > in this case, the two sides share most of the same state already, so sending the full document back and forth would be bad
+  - implement signaling relay fallback option
+  ? what to do when two users start collaborating, both with nonempty documents?
+   - resolve ID conflicts
+   - what if the diagrams overlap (which they probably will if they both start at the origin)?
  - move tool drag from either end of an arrow = move just that end (switch back to arrow tool? or just use arrow tool for this instead of move?)
   ? need marker for tail of arrow
  ? allow arrows to other arrows

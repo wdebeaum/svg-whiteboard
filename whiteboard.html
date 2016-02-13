@@ -904,6 +904,7 @@ function getDocChild(targ) {
 
 // FIXME: if an arrow and only one of its connected objects is selected, only that end of the arrow should move
 // FIXME 2: sometimes an object will become disconnected even though its ID still matches the arrow's head-id or tail-id; maybe related to copying?
+// FIXME 3: this is now called in response to remote moves, so half-moved arrows might also be in the local selection, not just doc
 function moveObjects(os, docMovement) {
   // translate each object, and consolidate its transform list
   for (var i = os.length-1; i >= 0; i--) {
