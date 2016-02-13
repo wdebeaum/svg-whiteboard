@@ -143,6 +143,9 @@ input[type="url"] {
 }
 </style>
 <script type="text/javascript">
+
+//// general UI manipulation ////
+
 function show(elem) {
   elem.style.display = '';
 }
@@ -256,6 +259,8 @@ function makeToolbarUnclicked(elem) {
   });
 }
 
+//// stateful stuff ////
+
 var svgNS = "http://www.w3.org/2000/svg";
 var xlinkNS = "http://www.w3.org/1999/xlink";
 var svg = undefined;
@@ -360,6 +365,8 @@ function iconToCursor(iconId, callback) {
   img.src = url;
 }
 
+//// coordinate transformations ////
+
 function getEventCoordsRelativeToDoc(e) {
   var pageCoords = svg.createSVGPoint();
   pageCoords.x = e.pageX;
@@ -397,7 +404,7 @@ function copyDocTransformToSelection() {
   selection.setAttribute("transform", doc.getAttribute("transform"));
 }
 
-// undo/redo actions/steps
+//// undo/redo actions/steps ////
 
 function AddObject(o) {
   this.addedObject = o;
@@ -536,6 +543,8 @@ function redoAction() {
   }
 }
 
+//// selection manipulation ////
+
 // move existing selection back to doc
 function anchorSelection() {
   var cs = selection.childNodes;
@@ -554,6 +563,8 @@ function updateSelectRect() {
   selectRect.setAttribute('height',
     Math.abs(selectRectEnd.y - selectRectStart.y));
 }
+
+//// text manipulation ////
 
 function newTextInput(pageCoords) {
   textToolInput.setAttribute('style',
@@ -638,6 +649,8 @@ function reopenTextInput(tspan) {
   show(textToolInput);
   textToolInput.focus();
 }
+
+//// general document manipulation ////
 
 // remove connections (arrows, line elements) that have one end in the selection
 function removeSelectionConnections() {
@@ -755,7 +768,7 @@ function moveObjects(os, docMovement) {
   }
 }
 
-// settings change handlers
+//// settings change handlers ////
 
 function setObjectSize(o, size) {
   if (size === undefined) {
@@ -938,6 +951,72 @@ function changeCurrentColor(newColor) {
   currentColor = newColor;
 }
 
+// very simple attempt to generate pronounceable names
+var vowels = 'aeiou'; // no y
+var consonants = 'bcdfghjklmnprstvwxz'; // no q, y
+function generateRandomName(inputID) {
+  var name = '';
+  var cv = 's';
+  for (var i = Math.floor(Math.random() * 6) + 5; // 5-10 letters at random
+       i > 0;
+       i--) {
+    // alternate consonants and vowels, starting at random
+    switch (cv) {
+      case 's': cv = (Math.random() < 0.5 ? 'c' : 'v'); break;
+      case 'c': cv = 'v'; break;
+      case 'v': cv = 'c'; break;
+    }
+    // add a random consonant or vowel
+    var str = (cv == 'c' ? consonants : vowels);
+    name += str[Math.floor(Math.random() * str.length)];
+  }
+  if (inputID) {
+    var input = document.getElementById(inputID)
+    input.value = name;
+    if (/^remote-user-\d+-name$/.test(input.id)) {
+      onChangeRemoteUserName(input);
+    } else { // local user name
+      onChangeLocal();
+    }
+  }
+  return name;
+}
+
+function onChangeRemoteUserName(input) {
+  var id = input.id.replace(/-name$/, '-uri');
+  var uriInput = document.getElementById(id);
+  if (/^[\w-]+/.test(input.value) && /^[\w-]+/.test(localUserName.value)) {
+    uriInput.value = blankWhiteboardUri.value + '#' + input.value + '+' + localUserName.value;
+  } else {
+    uriInput.value = '';
+  }
+}
+
+function onChangeLocal() {
+  var input;
+  for (var i = 1; input = document.getElementById('remote-user-' + i + '-name'); i++) {
+    onChangeRemoteUserName(input);
+  }
+}
+
+function addUser() { /* TODO */ }
+function removeUser() { /* TODO */ }
+
+function startCollaborating() {
+  // TODO iterate over multiple remote users
+  var remoteUserName = document.getElementById('remote-user-1-name').value;
+  var pc = new PeerConnection(remoteUserName);
+  pc.onopen = onPeerConnectionOpen;
+  pc.onmessage = onmessage;
+  pc.open();
+}
+
+function stopCollaborating() {
+  for (k in peerConnections) {
+    peerConnections[k].close();
+  }
+}
+
 function restoreDefaultSettings() {
   // remove all color buttons
   removeAllChildren(colorToolbar);
@@ -1000,7 +1079,7 @@ function updateFisheye() {
   fisheyeShadow.setAttribute('transform', 'scale(' + pageDims.width + ',' + pageDims.height + ')');
 }
 
-// import functions
+//// import ////
 // TODO handle more errors
 
 function importImageFile(file, pageCoords, onImageError) {
@@ -1085,6 +1164,227 @@ function importFile(file, pageCoords) {
     alert("Error: imported file is of non-image, non-plaintext type: " + file.type);
   }
 }
+
+//// SignalingRelay ////
+
+function ensureValidUserName(n) {
+  if (!/^[\w-]+$/.test(n)) {
+    var msg = "Invalid user name: " + n + "\nUser names should contain only letters, numbers, hyphens, and underscores.";
+    alert(msg);
+    throw new Error(msg);
+  }
+  return n;
+}
+
+function SignalingRelay(url, localUser, remoteUser) {
+  this.url = url;
+  this.localUser = ensureValidUserName(localUser);
+  this.remoteUser = ensureValidUserName(remoteUser);
+  this.writeBuffer = [];
+  this.receive();
+}
+
+SignalingRelay.prototype.receive = function() {
+  console.log('listening to ' + this.remoteUser + ' via signaling relay');
+  var that = this;
+  this.receiveXHR = new XMLHttpRequest();
+  this.receiveXHR.onload = function() {
+    try {
+      var text = that.receiveXHR.responseText;
+      console.log('received from ' + that.remoteUser + ' via signaling relay: ' + text);
+      that.ondata(JSON.parse(text));
+    } catch (err) {
+      console.log(err.message);
+    }
+    that.receive();
+  };
+  this.receiveXHR.onerror = function(e) {
+    console.log(e);
+  };
+  this.receiveXHR.open('GET', this.url + '?k=' + this.remoteUser, true);
+  this.receiveXHR.send();
+}
+
+SignalingRelay.prototype.sendBufferedMessages = function() {
+  if (this.writeBuffer.length > 0) {
+    var text = this.writeBuffer.shift();
+    var xhr = new XMLHttpRequest();
+    // once we've sent this message, recurse to send the rest of them
+    xhr.onload = this.sendBufferedMessages.bind(this);
+    xhr.onerror = function(e) { console.log(e); };
+    console.log('sending to ' + this.remoteUser + ' via signaling relay: ' + text);
+    xhr.open(
+      'GET',
+      this.url +
+	'?k=' + this.localUser +
+	'&m=' + encodeURIComponent(text),
+      true
+    );
+    xhr.send();
+  }
+}
+
+SignalingRelay.prototype.write = function(data) {
+  var text = JSON.stringify(data);
+  this.writeBuffer.push(text);
+  // if we just pushed the only entry in the buffer, start sendBufferedMessages
+  if (this.writeBuffer.length == 1) {
+    this.sendBufferedMessages();
+  }
+}
+
+SignalingRelay.prototype.close = function() {
+  this.receiveXHR.abort();
+}
+
+//// PeerConnection ////
+
+RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
+RTCSessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription;
+RTCIceCandidate = window.RTCIceCandidate || window.mozRTCIceCandidate;
+
+var peerConnections = {};
+
+function PeerConnection(remoteUser) {
+  this.remoteUser = remoteUser;
+  this.localUser = localUserName.value;
+  // if we're alphabetically first, we're the one to create the data channel
+  this.shouldCreateChannel =
+    (this.remoteUser.localeCompare(this.localUser, 'en') > 0);
+  this.iceServers = JSON.parse(iceServers.value);
+  peerConnections[remoteUser] = this;
+}
+
+[ // begin PeerConnection methods
+
+  function open() {
+    this.relay = new SignalingRelay(
+      signalingRelayUri.value, this.localUser, this.remoteUser);
+    this.relay.ondata = this.onRelayData.bind(this);
+    this.relay.write({ handshake: true });
+  },
+
+  function send(msg) {
+    msg = JSON.stringify(msg);
+    console.log('sending to ' + this.remoteUser + ' via data channel: ' + msg);
+    this.dataChannel.send(msg);
+  },
+
+  function close() {
+    if (this.relay) {
+      this.relay.close();
+      delete this.relay;
+    }
+    if (this.rtcpc) {
+      this.rtcpc.close();
+      delete this.rtcpc;
+    }
+    if (this.dataChannel) {
+      this.dataChannel.close();
+      delete this.dataChannel;
+    }
+  },
+
+  function logError(e) {
+    //console.log(e.name + ': ' + e.message);
+    console.log(e);
+  },
+
+  function onRelayData(data) {
+    if (data.handshake || !this.rtcpc) {
+      this.onHandshake();
+    } else if (data.desc) {
+      var desc = data.desc;
+      switch (desc.type) {
+	case 'offer':
+	  var that = this;
+	  this.rtcpc.setRemoteDescription(new RTCSessionDescription(desc)).
+	  then(function() {
+	    console.log('setRemoteDescription then');
+	    return that.rtcpc.createAnswer();
+	  }).then(function(answer) {
+	    console.log('setRemoteDescription then then');
+	    return that.rtcpc.setLocalDescription(answer);
+	  }).then(function() {
+	    console.log('setRemoteDescription then then then');
+	    that.relay.write({ desc: that.rtcpc.localDescription });
+	  }).catch(this.logError.bind(this));
+	  break;
+	case 'answer':
+	  this.rtcpc.setRemoteDescription(new RTCSessionDescription(desc)).
+	  catch(this.logError.bind(this));
+	  break;
+	default:
+	  log("Unsupported SDP type.");
+      }
+    } else {
+      this.rtcpc.addIceCandidate(new RTCIceCandidate(data.candidate)).
+      catch(this.logError.bind(this));
+    }
+  },
+
+  function onHandshake() {
+    this.rtcpc = new RTCPeerConnection({ iceServers: this.iceServers });
+    this.rtcpc.onicecandidate = this.onicecandidate.bind(this);
+    this.rtcpc.onnegotiationneeded = this.onnegotiationneeded.bind(this);
+    this.rtcpc.ondatachannel = this.ondatachannel.bind(this);
+    if (this.shouldCreateChannel) {
+      this.dataChannel = this.rtcpc.createDataChannel(this.remoteUser);
+      this.dataChannel.onopen =
+        this.onDataChannelOpen.bind(this);
+    }
+  },
+
+  function onicecandidate(e) {
+    console.log('onicecandidate');
+    if (e.candidate) {
+      this.relay.write({ candidate: e.candidate });
+    } else {
+      console.log('null candidate');
+    }
+  },
+
+  function onnegotiationneeded(e) {
+    console.log('onnegotiationneeded');
+    // FIXME I think Firefox and Chrome have different ways of structuring these callbacks
+    var that = this;
+    this.rtcpc.createOffer().then(function(offer) {
+      console.log('createOffer then');
+      return that.rtcpc.setLocalDescription(offer);
+    }).then(function() {
+      console.log('createOffer then then');
+      that.relay.write({ desc: that.rtcpc.localDescription });
+    }).catch(this.logError.bind(this));
+  },
+
+  function ondatachannel(e) {
+    console.log('got data channel from ' + this.remoteUser);
+    this.dataChannel = e.channel;
+    this.dataChannel.onopen = this.onDataChannelOpen.bind(this);
+  },
+
+  function onDataChannelOpen(e) {
+    console.log('connected to ' + this.remoteUser);
+    this.dataChannel.onmessage = this.onDataChannelMessage.bind(this);
+    this.onopen();
+  },
+
+  function onDataChannelMessage(e) {
+    var data = e.data.toString();
+    console.log('received from ' + this.remoteUser + ' via data channel: ' + data);
+    try {
+      console.log('attempting to parse...');
+      data = JSON.parse(data);
+      console.log('parsed as: ' + JSON.stringify(data));
+      this.onmessage(data);
+    } catch (err) {
+      this.logError(err);
+    }
+  }
+
+].map(function(fn) { PeerConnection.prototype[fn.name] = fn; });
+
+//// tools ////
 
 // event handlers for each tool
 // (except onwheel, which is mostly the same for all tools)
@@ -1349,6 +1649,8 @@ var tools = {
   }
 };
 
+//// non-tool-specific event handlers ////
+
 function onMouseDownOrClick(handlerName, e) {
   if (!mouseIsOverUI) {
     var fn = tools[currentTool][handlerName];
@@ -1519,9 +1821,7 @@ function ondrop(e) {
   }
 }
 
-function onDataChannelOpen(remoteUserName, e) {
-  console.log('connected to ' + remoteUserName);
-  window.dataChannel.onmessage = onmessage.bind(window, remoteUserName);
+function onPeerConnectionOpen() {
   // send all objects in our document
   // first anchor selection down to doc
   anchorSelection();
@@ -1533,254 +1833,37 @@ function onDataChannelOpen(remoteUserName, e) {
     }
   }
   // then send doc's innerHTML
-  var msg = JSON.stringify({ type: 'addObjects', outerHTML: doc.innerHTML });
-  console.log('sending to ' + remoteUserName + ' via data channel: ' + msg);
-  window.dataChannel.send(msg);
-}
+  this.send({ type: 'addObjects', outerHTML: doc.innerHTML });
+};
 
-function onmessage(remoteUserName, e) {
-  var data = e.data.toString();
-  console.log('received from ' + remoteUserName + ' via data channel: ' + data);
-  try {
-    console.log('attempting to parse...');
-    data = JSON.parse(data);
-    console.log('parsed as: ' + JSON.stringify(data));
-    console.log('data.type = ' + data.type);
-    switch (data.type) {
-      case 'chat':
-	// TODO
-	console.log('incoming chat message: ' + data.message);
-	break;
-      case 'addObjects':
-	console.log('adding remote objects');
-	var svgDoc = (new DOMParser()).parseFromString(
-	  '<svg xmlns="' + svgNS + '" xmlns:xlink="' + xlinkNS + '">' +
-	  data.outerHTML +
-	  '</svg>',
-	  'image/svg+xml'
-	);
-	// FIXME order reversed
-	var cs = svgDoc.documentElement.childNodes;
-	for (var i = cs.length-1; i >= 0; i--) {
-	  doc.appendChild(document.adoptNode(cs[i]));
-	}
-	break;
+function onmessage(data) {
+  console.log('data.type = ' + data.type);
+  switch (data.type) {
+    case 'chat':
       // TODO
-      default:
-	console.log('unknown incoming data type: ' + data.type);
-    }
-  } catch (err) {
-    console.log(err);
-  }
-}
-
-function ensureValidUserName(n) {
-  if (!/^[\w-]+$/.test(n)) {
-    var msg = "Invalid user name: " + n + "\nUser names should contain only letters, numbers, hyphens, and underscores.";
-    alert(msg);
-    throw new Error(msg);
-  }
-  return n;
-}
-
-function SignalingRelay(url, localUser, remoteUser) {
-  this.url = url;
-  this.localUser = ensureValidUserName(localUser);
-  this.remoteUser = ensureValidUserName(remoteUser);
-  this.writeBuffer = [];
-  this.receive();
-}
-
-SignalingRelay.prototype.receive = function() {
-  console.log('listening to ' + this.remoteUser + ' via signaling relay');
-  var that = this;
-  this.receiveXHR = new XMLHttpRequest();
-  this.receiveXHR.onload = function() {
-    try {
-      var text = that.receiveXHR.responseText;
-      console.log('received from ' + that.remoteUser + ' via signaling relay: ' + text);
-      that.ondata(JSON.parse(text));
-    } catch (err) {
-      console.log(err.message);
-    }
-    that.receive();
-  };
-  this.receiveXHR.onerror = function(e) {
-    console.log(e);
-  };
-  this.receiveXHR.open('GET', this.url + '?k=' + this.remoteUser, true);
-  this.receiveXHR.send();
-}
-
-SignalingRelay.prototype.sendBufferedMessages = function() {
-  if (this.writeBuffer.length > 0) {
-    var text = this.writeBuffer.shift();
-    var xhr = new XMLHttpRequest();
-    // once we've sent this message, recurse to send the rest of them
-    xhr.onload = this.sendBufferedMessages.bind(this);
-    xhr.onerror = function(e) { console.log(e); };
-    console.log('sending to ' + this.remoteUser + ' via signaling relay: ' + text);
-    xhr.open(
-      'GET',
-      this.url +
-	'?k=' + this.localUser +
-	'&m=' + encodeURIComponent(text),
-      true
-    );
-    xhr.send();
-  }
-}
-
-SignalingRelay.prototype.write = function(data) {
-  var text = JSON.stringify(data);
-  this.writeBuffer.push(text);
-  // if we just pushed the only entry in the buffer, start sendBufferedMessages
-  if (this.writeBuffer.length == 1) {
-    this.sendBufferedMessages();
-  }
-}
-
-SignalingRelay.prototype.close = function() {
-  this.receiveXHR.abort();
-}
-
-// very simple attempt to generate pronounceable names
-var vowels = 'aeiou'; // no y
-var consonants = 'bcdfghjklmnprstvwxz'; // no q, y
-function generateRandomName(inputID) {
-  var name = '';
-  var cv = 's';
-  for (var i = Math.floor(Math.random() * 6) + 5; // 5-10 letters at random
-       i > 0;
-       i--) {
-    // alternate consonants and vowels, starting at random
-    switch (cv) {
-      case 's': cv = (Math.random() < 0.5 ? 'c' : 'v'); break;
-      case 'c': cv = 'v'; break;
-      case 'v': cv = 'c'; break;
-    }
-    // add a random consonant or vowel
-    var str = (cv == 'c' ? consonants : vowels);
-    name += str[Math.floor(Math.random() * str.length)];
-  }
-  if (inputID) {
-    var input = document.getElementById(inputID)
-    input.value = name;
-    if (/^remote-user-\d+-name$/.test(input.id)) {
-      onChangeRemoteUserName(input);
-    } else { // local user name
-      onChangeLocal();
-    }
-  }
-  return name;
-}
-
-function onChangeRemoteUserName(input) {
-  var id = input.id.replace(/-name$/, '-uri');
-  var uriInput = document.getElementById(id);
-  if (/^[\w-]+/.test(input.value) && /^[\w-]+/.test(localUserName.value)) {
-    uriInput.value = blankWhiteboardUri.value + '#' + input.value + '+' + localUserName.value;
-  } else {
-    uriInput.value = '';
-  }
-}
-
-function onChangeLocal() {
-  var input;
-  for (var i = 1; input = document.getElementById('remote-user-' + i + '-name'); i++) {
-    onChangeRemoteUserName(input);
-  }
-}
-
-function addUser() { /* TODO */ }
-function removeUser() { /* TODO */ }
-
-RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
-RTCSessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription;
-RTCIceCandidate = window.RTCIceCandidate || window.mozRTCIceCandidate;
-
-var sr;
-var pc;
-function startCollaborating() {
-  // TODO iterate over multiple remote users
-  var remoteUserName = document.getElementById('remote-user-1-name').value;
-  var logError = function(err) { console.log(err.name + ': ' + err.message); };
-  sr = new SignalingRelay(signalingRelayUri.value, localUserName.value, remoteUserName);
-  // if we're alphabetically first, we're the one to create the data channel
-  var createChannel =
-    (remoteUserName.localeCompare(localUserName.value, 'en') > 0);
-  var onhandshake = function() {
-    pc = new RTCPeerConnection({ iceServers: JSON.parse(iceServers.value) });
-    pc.onicecandidate = function(e) {
-      console.log('onicecandidate');
-      if (e.candidate) {
-	sr.write({ candidate: e.candidate });
-      } else {
-	console.log('null candidate');
+      console.log('incoming chat message: ' + data.message);
+      break;
+    case 'addObjects':
+      console.log('adding remote objects');
+      var svgDoc = (new DOMParser()).parseFromString(
+	'<svg xmlns="' + svgNS + '" xmlns:xlink="' + xlinkNS + '">' +
+	data.outerHTML +
+	'</svg>',
+	'image/svg+xml'
+      );
+      // FIXME order reversed
+      var cs = svgDoc.documentElement.childNodes;
+      for (var i = cs.length-1; i >= 0; i--) {
+	doc.appendChild(document.adoptNode(cs[i]));
       }
-    };
-    pc.onnegotiationneeded = function(e) {
-      console.log('onnegotiationneeded');
-      // FIXME I think Firefox and Chrome have different ways of structuring these callbacks
-      pc.createOffer().then(function(offer) {
-	console.log('createOffer then');
-	return pc.setLocalDescription(offer);
-      }).then(function() {
-	console.log('createOffer then then');
-	sr.write({ desc: pc.localDescription });
-      }).catch(logError);
-    };
-    pc.ondatachannel = function(e) {
-      console.log('got data channel from ' + remoteUserName);
-      window.dataChannel = e.channel;
-      window.dataChannel.onopen =
-        onDataChannelOpen.bind(window, remoteUserName);
-    }
-    if (createChannel) {
-      window.dataChannel = pc.createDataChannel(remoteUserName);
-      window.dataChannel.onopen =
-        onDataChannelOpen.bind(window, remoteUserName);
-    }
+      break;
+    // TODO
+    default:
+      console.log('unknown incoming data type: ' + data.type);
   }
-
-  sr.ondata = function(data) {
-    if (data.handshake || !pc) {
-      onhandshake();
-    } else if (data.desc) {
-      var desc = data.desc;
-      switch (desc.type) {
-	case 'offer':
-	  pc.setRemoteDescription(new RTCSessionDescription(desc)).
-	  then(function() {
-	    console.log('setRemoteDescription then');
-	    return pc.createAnswer();
-	  }).then(function(answer) {
-	    console.log('setRemoteDescription then then');
-	    return pc.setLocalDescription(answer);
-	  }).then(function() {
-	    console.log('setRemoteDescription then then then');
-	    sr.write({ desc: pc.localDescription });
-	  }).catch(logError);
-	  break;
-	case 'answer':
-	  pc.setRemoteDescription(new RTCSessionDescription(desc)).
-	  catch(logError);
-	  break;
-	default:
-	  log("Unsupported SDP type.");
-      }
-    } else {
-      pc.addIceCandidate(new RTCIceCandidate(data.candidate)).
-      catch(logError);
-    }
-  };
-  sr.write({ handshake: true });
 }
 
-function stopCollaborating() {
-  pc.close();
-  sr.close();
-}
+//// initializiation ////
 
 function toggleMenu() {
   toggleButtonClickedness(menuButton);
