@@ -1553,7 +1553,12 @@ function onmessage(remoteUserName, e) {
 	break;
       case 'addObjects':
 	console.log('adding remote objects');
-	var svgDoc = (new DOMParser()).parseFromString('<svg xmlns:xlink="' + xlinkNS + '">' + data.outerHTML + '</svg>', 'image/svg+xml');
+	var svgDoc = (new DOMParser()).parseFromString(
+	  '<svg xmlns="' + svgNS + '" xmlns:xlink="' + xlinkNS + '">' +
+	  data.outerHTML +
+	  '</svg>',
+	  'image/svg+xml'
+	);
 	// FIXME order reversed
 	var cs = svgDoc.documentElement.childNodes;
 	for (var i = cs.length-1; i >= 0; i--) {
