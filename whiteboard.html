@@ -1646,11 +1646,14 @@ RTCIceCandidate = window.RTCIceCandidate || window.mozRTCIceCandidate;
 
 var sr;
 var pc;
-function startCollaborating(server) {
+function startCollaborating() {
   // TODO iterate over multiple remote users
   var remoteUserName = document.getElementById('remote-user-1-name').value;
   var logError = function(err) { console.log(err.name + ': ' + err.message); };
   sr = new SignalingRelay(signalingRelayUri.value, localUserName.value, remoteUserName);
+  // if we're alphabetically first, we're the one to create the data channel
+  var createChannel =
+    (remoteUserName.localeCompare(localUserName.value, 'en') > 0);
   var ondatachannelopen = function() {
     console.log('connected to ' + remoteUserName);
     window.dataChannel.onmessage = function(e) {
@@ -1683,7 +1686,7 @@ function startCollaborating(server) {
       window.dataChannel = e.channel;
       window.dataChannel.onopen = ondatachannelopen;
     }
-    if (server) {
+    if (createChannel) {
       window.dataChannel = pc.createDataChannel(remoteUserName);
       window.dataChannel.onopen = ondatachannelopen;
     }
@@ -1908,6 +1911,13 @@ window.onload = function() {
   svg.ondrop = ondrop;
   doc.onmousedown = onMouseDownOrClick.bind(this, 'ondocmousedown');
   selection.onmousedown = onMouseDownOrClick.bind(this, 'onselectionmousedown');
+
+  if (window.location.hash) {
+    var userNames = window.location.hash.substr(1).split(/\+/);
+    localUserName.value = userNames[0];
+    document.getElementById('remote-user-1-name').value = userNames[1];
+    startCollaborating();
+  }
 }
 </script>
 </head>
@@ -2282,6 +2292,7 @@ window.onload = function() {
   <label>Continue fisheye effect for <input id="fisheye-timeout" type="number" min="0" value="250"> milliseconds after panning with scroll wheel/gesture.</label>
    <!-- TODO preview? -->
  </div>
+ <div id="collaboration-settings" style="display: none;"><!-- hidden while I work on setting it up -->
  <hr>
  <h2>Collaboration</h2>
  <label>Local user name is <input type="text" id="local-user-name" placeholder="/^[\w-]+$/" onchange="onChangeLocal()"></label>. <button onclick="generateRandomName('local-user-name')">generate random name</button><br>
@@ -2293,8 +2304,8 @@ window.onload = function() {
     <input type="url" id="remote-user-1-uri" placeholder="Enter both local and remote user names to compute the URI." readonly></label></li>
   <li><button onclick="addUser()">+ add</button> <button onclick="removeUser()">- remove</button></li>
  </ol>
- <button onclick="startCollaborating()">|&gt; start collaborating</button>
- <button onclick="stopCollaborating()">|| stop collaborating</button>
+ <button onclick="startCollaborating()">☑ start collaborating</button>
+ <button onclick="stopCollaborating()">☒ stop collaborating</button>
  <h3>WebRTC settings</h3>
  <p>Leave these alone unless you know what you're doing.</p>
  <label>Signaling relay URI:<br>
@@ -2316,6 +2327,7 @@ window.onload = function() {
 }
 ]</textarea></label>
  <label><input type="checkbox" id="enable-signaling-fallback"> Fall back to using the signaling relay as the main connection if ICE fails.</label>
+ </div>
  <hr>
  <button onclick="hide(settingsWindow)">dismiss</button>
  <button onclick="restoreDefaultSettings()">restore defaults</button>
