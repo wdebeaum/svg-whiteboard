@@ -605,6 +605,7 @@ function cancelAction() {
 function finishAction() {
   actionsToUndo.push(currentAction);
   actionsToRedo = [];
+  sendAction(currentAction);
 }
 
 function undoAction() {
@@ -615,6 +616,7 @@ function undoAction() {
       action[i].undo();
     }
     actionsToRedo.push(action);
+    unsendAction(action);
   }
 }
 
@@ -626,23 +628,32 @@ function redoAction() {
       action[i].redo();
     }
     actionsToUndo.push(action);
+    sendAction(action);
   }
 }
 
 function sendAction(action) {
-  var descriptions = action.map(function(a) { return a.describe(); });
-  for (var remoteUser in peerConnections) {
-    for (var i = 0; i < descriptions.length; i++) {
-      peerConnections[remoteUser].send(descriptions[i]);
+  if (Object.keys(peerConnections).length > 0) {
+    var descriptions = action.map(function(a) { return a.describe(); });
+    for (var remoteUser in peerConnections) {
+      if (peerConnections[remoteUser].isOpen) {
+	for (var i = 0; i < descriptions.length; i++) {
+	  peerConnections[remoteUser].send(descriptions[i]);
+	}
+      }
     }
   }
 }
 
 function unsendAction(action) {
-  var descriptions = action.map(function(a) { return a.undescribe(); });
-  for (var remoteUser in peerConnections) {
-    for (var i = descriptions.length-1; i >= 0; i--) {
-      peerConnections[remoteUser].send(descriptions[i]);
+  if (Object.keys(peerConnections).length > 0) {
+    var descriptions = action.map(function(a) { return a.undescribe(); });
+    for (var remoteUser in peerConnections) {
+      if (peerConnections[remoteUser].isOpen) {
+	for (var i = descriptions.length-1; i >= 0; i--) {
+	  peerConnections[remoteUser].send(descriptions[i]);
+	}
+      }
     }
   }
 }
@@ -1504,7 +1515,11 @@ defineMethods(PeerConnection, [
   function onicecandidate(e) {
     console.log('onicecandidate');
     if (e.candidate) {
-      this.relay.write({ candidate: e.candidate });
+      if (this.relay) {
+        this.relay.write({ candidate: e.candidate });
+      } else {
+	console.log('no relay (anymore?)');
+      }
     } else {
       console.log('null candidate');
     }
