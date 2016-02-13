@@ -1651,6 +1651,12 @@ function startCollaborating(server) {
   var remoteUserName = document.getElementById('remote-user-1-name').value;
   var logError = function(err) { console.log(err.name + ': ' + err.message); };
   sr = new SignalingRelay(signalingRelayUri.value, localUserName.value, remoteUserName);
+  var ondatachannelopen = function() {
+    console.log('connected to ' + remoteUserName);
+    window.dataChannel.onmessage = function(e) {
+      console.log('received from ' + remoteUserName + ' via data channel: ' + e.data);
+    }
+  };
   var onhandshake = function() {
     pc = new RTCPeerConnection({ iceServers: JSON.parse(iceServers.value) });
     pc.onicecandidate = function(e) {
@@ -1673,14 +1679,13 @@ function startCollaborating(server) {
       }).catch(logError);
     };
     pc.ondatachannel = function(e) {
-      console.log('connected to ' + remoteUserName);
+      console.log('got data channel from ' + remoteUserName);
       window.dataChannel = e.channel;
-      window.dataChannel.onmessage = function(e) {
-	console.log('received from ' + remoteUserName + ' via data channel: ' + e.data);
-      }
+      window.dataChannel.onopen = ondatachannelopen;
     }
     if (server) {
-      pc.createDataChannel(remoteUserName);
+      window.dataChannel = pc.createDataChannel(remoteUserName);
+      window.dataChannel.onopen = ondatachannelopen;
     }
   }
 
