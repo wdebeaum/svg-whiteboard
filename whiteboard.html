@@ -33,6 +33,13 @@ html, body, svg {
   margin: 0;
   overflow: hidden;
 }
+#svg-container {
+  position: absolute;
+  width: 100%;
+  top: 0;
+  margin: 0;
+  overflow: hidden;
+}
 .clicked.icon {
   stroke: white;
 }
@@ -140,6 +147,62 @@ input[type="url"] {
 }
 #ice-servers {
   width: 100%;
+}
+#collaboration-bar {
+  background-color: #ddd;
+  border: 1px solid black;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  height: 14ex;
+}
+#text-chat {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  top: 0;
+  right: 20%;
+}
+#text-chat-history {
+  position: absolute;
+  overflow-y: scroll;
+  top: 0;
+  width: 100%;
+  height: 12ex;
+}
+#text-chat-input {
+  position: absolute;
+  width: 100%;
+  bottom: 0;
+  height: 2ex;
+  border: 0;
+  padding: 0;
+}
+#user-status {
+  position: absolute;
+  overflow: auto;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  left: 80%;
+}
+#user-status-list {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-left: 1em;
+}
+#user-status-list li span {
+  color: black;
+}
+#user-status-list li.active {
+  color: green;
+}
+#user-status-list li.inactive {
+  color: orange;
+}
+#user-status-list li.disconnected {
+  color: #888;
 }
 </style>
 <script type="text/javascript">
@@ -1174,6 +1237,17 @@ function onChangeLocal() {
 function addUser() { /* TODO */ }
 function removeUser() { /* TODO */ }
 
+function showCollaborationBar() {
+  show(collaborationBar);
+  // move bottom of svg up to make room for height of collaboration bar
+  svgContainer.style.setProperty('bottom', getComputedStyle(collaborationBar).getPropertyValue('height'));
+}
+
+function hideCollaborationBar() {
+  hide(collaborationBar);
+  svgContainer.style.setProperty('bottom', 0);
+}
+
 function startCollaborating() {
   // TODO iterate over multiple remote users
   var remoteUserName = document.getElementById('remote-user-1-name').value;
@@ -1181,6 +1255,7 @@ function startCollaborating() {
   pc.onopen = onPeerConnectionOpen;
   pc.onmessage = onmessage;
   pc.open();
+  showCollaborationBar();
 }
 
 function stopCollaborating() {
@@ -1188,6 +1263,7 @@ function stopCollaborating() {
     peerConnections[k].close();
   }
   peerConnections = {};
+  hideCollaborationBar();
 }
 
 function restoreDefaultSettings() {
@@ -1591,6 +1667,14 @@ defineMethods(PeerConnection, [
   }
 
 ]);
+
+function broadcast(msg) {
+  for (var remoteUser in peerConnections) {
+    if (peerConnection[remoteUser].isOpen) {
+      peerConnection[remoteUser].send(msg);
+    }
+  }
+}
 
 //// tools ////
 
@@ -2044,15 +2128,46 @@ function onPeerConnectionOpen() {
   this.send({ type: 'addObjects', outerHTML: doc.innerHTML });
 };
 
+function addToTextChatHistory(sender, message) {
+  var time = (new Date()).toLocaleTimeString(undefined,
+    { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  textChatHistory.appendChild(document.createTextNode(time + ' '));
+  var b = document.createElement('b');
+  // TODO assign colors to users?
+  if (/^\/me /.test(message)) {
+    b.appendChild(document.createTextNode('* ' + sender));
+    message = RegExp.rightContext;
+  } else {
+    b.appendChild(document.createTextNode('<' + sender + '>'));
+  }
+  textChatHistory.appendChild(b);
+  textChatHistory.appendChild(document.createTextNode(' ' + message));
+  textChatHistory.appendChild(document.createElement('br'));
+  // scroll to bottom
+  textChatHistory.scrollTop = textChatHistory.scrollHeight;
+}
+
 function onmessage(data) {
   console.log('data.type = ' + data.type);
   switch (data.type) {
     case 'chat':
-      // TODO
-      console.log('incoming chat message: ' + data.message);
+      addToTextChatHistory(data.sender, data.message);
       break;
     default:
       receiveStep(data);
+  }
+}
+
+function onTextChatInputKeyUp(e) {
+  if (e.keyCode == 13) {
+    e.preventDefault();
+    broadcast({
+      type: 'chat',
+      sender: localUserName.value,
+      message: textChatInput.value
+    });
+    addToTextChatHistory(localUserName.value, textChatInput.value);
+    textChatInput.value = '';
   }
 }
 
@@ -2067,7 +2182,7 @@ function toggleMenu() {
 window.onload = function() {
   svg = document.getElementsByTagName("svg")[0];
   iconStyle = document.getElementById('icon-style').outerHTML;
-  var idVars = 'docAndSelection doc selection selectRect zoomFactor textToolInput helpWindow settingsWindow colorInput panScrollX panScrollY invertScrollZoom zoomStep enableFisheye fisheyeSettings fisheyeBorderSquash fisheyeBorderThickness fisheyeTimeout fisheyeBorders fisheyeShadow localUserName blankWhiteboardUri remoteUsers signalingRelayUri iceServers enableSignalingFallback sizeToolbar colorToolbar actionsToolbar deleteButton undoButton redoButton menu menuButton'.split(' ')
+  var idVars = 'docAndSelection doc selection selectRect zoomFactor textToolInput helpWindow settingsWindow colorInput panScrollX panScrollY invertScrollZoom zoomStep enableFisheye fisheyeSettings fisheyeBorderSquash fisheyeBorderThickness fisheyeTimeout fisheyeBorders fisheyeShadow localUserName blankWhiteboardUri remoteUsers signalingRelayUri iceServers enableSignalingFallback sizeToolbar colorToolbar actionsToolbar deleteButton undoButton redoButton menu menuButton collaborationBar svgContainer textChatHistory textChatInput userStatusList'.split(' ')
   for (var i = idVars.length-1; i >= 0; i--) {
     var id = idVars[i].replace(/[A-Z]/g, function(m) { return '-' + m.toLowerCase(); });
     window[idVars[i]] = document.getElementById(id);
@@ -2238,6 +2353,7 @@ window.onload = function() {
   svg.ondrop = ondrop;
   doc.onmousedown = onMouseDownOrClick.bind(this, 'ondocmousedown');
   selection.onmousedown = onMouseDownOrClick.bind(this, 'onselectionmousedown');
+  textChatInput.onkeyup = onTextChatInputKeyUp;
 
   if (window.location.hash) {
     var userNames = window.location.hash.substr(1).split(/\+/);
@@ -2254,6 +2370,7 @@ window.onload = function() {
 <input id="file-input" class="invisible" type="file">
 <input id="import-input" class="invisible" type="file">
 <a id="file-output" class="invisible" download="whiteboard.html">whiteboard.html</a>
+<div id="svg-container" style="bottom: 0px">
 <svg>
  <defs>
   <filter id="shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">
@@ -2540,6 +2657,20 @@ window.onload = function() {
   </g>
  </g>
 </svg>
+</div>
+<div id="collaboration-bar" style="display: none;">
+ <div id="text-chat">
+  <div id="text-chat-history"></div>
+  <input type="text" id="text-chat-input">
+ </div>
+ <div id="user-status">
+  <ul id="user-status-list">
+   <li class="active"><span>user 1</span>
+   <li class="inactive"><span>user 2</span>
+   <li class="disconnected"><span>user 3</span>
+  </ul>
+ </div>
+</div>
 <div id="help-window" class="popup" style="display: none;">
  <h1><a href="https://github.com/wdebeaum/svg-whiteboard">SVG Whiteboard</a></h1>
  <p>Written by <a href="http://www.uofr.net/~willdb/">William de Beaumont</a></p>
