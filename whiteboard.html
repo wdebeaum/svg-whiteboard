@@ -1376,7 +1376,7 @@ defineMethods(SignalingRelay, [
     this.receiveXHR.onerror = function(e) {
       console.log(e);
     };
-    this.receiveXHR.open('GET', this.url + '?k=' + this.remoteUser, true);
+    this.receiveXHR.open('GET', this.url + '?k=' + this.remoteUser + '-' + this.localUser, true);
     this.receiveXHR.send();
   },
 
@@ -1391,7 +1391,7 @@ defineMethods(SignalingRelay, [
       xhr.open(
 	'GET',
 	this.url +
-	  '?k=' + this.localUser +
+	  '?k=' + this.localUser + '-' + this.remoteUser +
 	  '&m=' + encodeURIComponent(text),
 	true
       );
