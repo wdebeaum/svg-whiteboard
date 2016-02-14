@@ -1369,7 +1369,7 @@ defineMethods(SignalingRelay, [
 	console.log('received from ' + that.remoteUser + ' via signaling relay: ' + text);
 	that.ondata(JSON.parse(text));
       } catch (err) {
-	console.log(err.message);
+	console.log(err.stack);
       }
       that.receive();
     };
@@ -1476,6 +1476,7 @@ defineMethods(PeerConnection, [
       switch (desc.type) {
 	case 'offer':
 	  var that = this;
+	  /* how the spec does it, vs. Chrome's legacy interface
 	  this.rtcpc.setRemoteDescription(new RTCSessionDescription(desc)).
 	  then(function() {
 	    console.log('setRemoteDescription then');
@@ -1487,17 +1488,30 @@ defineMethods(PeerConnection, [
 	    console.log('setRemoteDescription then then then');
 	    that.relay.write({ desc: that.rtcpc.localDescription });
 	  }).catch(this.logError.bind(this));
+	   */
+	  this.rtcpc.setRemoteDescription(new RTCSessionDescription(desc), function() {
+	    console.log('setRemoteDescription success');
+	    that.rtcpc.createAnswer(function(answer) {
+	      console.log('createAnswer success');
+	      that.rtcpc.setLocalDescription(answer, function() {
+		console.log('setLocalDescription success');
+		that.relay.write({ desc: that.rtcpc.localDescription });
+	      }, that.logError.bind(that));
+	    }, that.logError.bind(that));
+	  }, this.logError.bind(this));
 	  break;
 	case 'answer':
-	  this.rtcpc.setRemoteDescription(new RTCSessionDescription(desc)).
-	  catch(this.logError.bind(this));
+	  this.rtcpc.setRemoteDescription(new RTCSessionDescription(desc)
+	  /* ).catch( */ , function() {}, // spec vs. legacy
+	  this.logError.bind(this));
 	  break;
 	default:
 	  log("Unsupported SDP type.");
       }
     } else {
-      this.rtcpc.addIceCandidate(new RTCIceCandidate(data.candidate)).
-      catch(this.logError.bind(this));
+      this.rtcpc.addIceCandidate(new RTCIceCandidate(data.candidate)
+      /* ).catch( */ , function() {}, // spec vs. legacy
+      this.logError.bind(this));
     }
   },
 
@@ -1528,8 +1542,9 @@ defineMethods(PeerConnection, [
 
   function onnegotiationneeded(e) {
     console.log('onnegotiationneeded');
-    // FIXME I think Firefox and Chrome have different ways of structuring these callbacks
     var that = this;
+    /* This is how the WebRTC spec and Firefox do it, but Chrome only allows
+     * the "legacy" interface, so we use that instead.
     this.rtcpc.createOffer().then(function(offer) {
       console.log('createOffer then');
       return that.rtcpc.setLocalDescription(offer);
@@ -1537,6 +1552,14 @@ defineMethods(PeerConnection, [
       console.log('createOffer then then');
       that.relay.write({ desc: that.rtcpc.localDescription });
     }).catch(this.logError.bind(this));
+     */
+    this.rtcpc.createOffer(function(offer) {
+      console.log('createOffer success');
+      that.rtcpc.setLocalDescription(offer, function() {
+	console.log('setLocalDescription success');
+	that.relay.write({ desc: that.rtcpc.localDescription });
+      }, that.logError.bind(that));
+    }, this.logError.bind(this));
   },
 
   function ondatachannel(e) {

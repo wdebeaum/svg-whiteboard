@@ -22,6 +22,7 @@ X cancelled
  ? sometimes head object of arrow can't be found?
  - see FIXME comments on moveObjects, maybe related to above two
  ? trashcan vs. eraser
+ - small text is smaller on Chrome than on Firefox?!
 
 = enhancements of existing features
  X make new open a new tab/window with a blank document (using data URI) instead of clearing the current document
