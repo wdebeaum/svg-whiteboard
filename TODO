@@ -55,16 +55,22 @@ X cancelled
   - unhide collaboration settings by default (once it's more polished)
   - document it in help text and README
   # add corresponding section to settings
+  ? separate menu item for collaboration settings
   ? A/V/text chat inset
   - more than two users
    . star topology, hub relays messages
    . completely connected graph, everyone sends only their own messages, to everyone else
-  ? separate menu item for collaboration settings
-  - collaboration status indicator
+   - make add/remove user buttons work
+  - add/remove users on the fly (while already collaborating)
+   - send notification to other users about new users joining
+  - overall collaboration status indicator
    - merge start/stop buttons
-   - add/remove users on the fly
-   - notice when a connection drops, give option to restart it
-    > in this case, the two sides share most of the same state already, so sending the full document back and forth would be bad
+  - notice when a connection drops, give option to restart it (or just try automatically continuously)
+   > in this case, the two sides share most of the same state already, so sending the full document back and forth would be bad
+  - show for each user:
+   - their currently selected color/size/tool
+   - connection status (disconnected/connecting/connected and active/connected but idle)
+   ? personal icon or generic silhouette fallback
   - implement signaling relay fallback option
   ? what to do when two users start collaborating, both with nonempty documents?
    - resolve ID conflicts
