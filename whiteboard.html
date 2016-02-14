@@ -120,6 +120,19 @@ div.popup {
   overflow: auto;
   filter: none; /* work around bug in Firefox */
 }
+.close {
+  position: fixed;
+  top: 48px;
+  right: 48px;
+  width: 16px;
+  height: 16px;
+  background-color: red;
+  border: 1px solid black;
+  font-family: Symbola;
+  font-size: 12pt;
+  text-align: center;
+  vertical-align: middle;
+}
 dt {
   font-weight: bold;
 }
@@ -2672,6 +2685,7 @@ window.onload = function() {
  </div>
 </div>
 <div id="help-window" class="popup" style="display: none;">
+ <div class="close" onclick="hide(helpWindow)">X</div>
  <h1><a href="https://github.com/wdebeaum/svg-whiteboard">SVG Whiteboard</a></h1>
  <p>Written by <a href="http://www.uofr.net/~willdb/">William de Beaumont</a></p>
  <p>SVG Whiteboard is a simple drawing application written as a standalone webpage. It requires no external resources besides a reasonably modern web browser. So you can download it, and use it from your own computer without even being connected to the Internet. You can save your work to a file on your computer, and that file will also contain the complete application. If you send that file to someone else, they will be able to open and edit it in the same way you did: with just a web browser.</p>
@@ -2726,13 +2740,14 @@ window.onload = function() {
   <dt><svg class="inline icon"><use xlink:href="#settings-icon"></use></svg> Settings...</dt>
    <dd>Lets you adjust settings related to the operation of this application, including the color palette, scrolling speed and direction, and the fisheye panning effect.</dd>
   <dt><svg class="inline icon"><use xlink:href="#help-icon"></use></svg> Help...</dt>
-   <dd>Displays this help window. Click the "dismiss" button to get rid of it again.</dd>
+   <dd>Displays this help window. Click the "dismiss" button at the bottom, or the red X at the top right, to get rid of it again.</dd>
  </dl>
  <h2>Technowledgements</h2>
  <p>SVG Whiteboard was written using <a href="http://www.w3.org/Graphics/SVG/">SVG</a> (natch) embedded in <a href="http://www.w3.org/TR/html5/">HTML5</a>, and makes good use of <a href="https://www.w3.org/Style/CSS/">CSS</a>, <a href="http://www.ecmascript.org/">ECMAScript (aka JavaScript)</a>, <a href="http://tools.ietf.org/html/rfc2397">Data URIs</a>, the <a href="https://www.w3.org/TR/FileAPI/">File API</a>, and <a href="http://www.unicode.org/">Unicode</a>. It also embeds an excerpt of the <a href="http://users.teilar.gr/~g1951d/">Symbola</a> font (as a data URI). The full font has glyphs for practically all the symbols in Unicode, and is "free for any use". I use just the ASCII part part plus some extra Latin and Greek characters, and glyphs for most of the tool and menu icons in this application.</p>
  <button onclick="hide(helpWindow)">dismiss</button>
 </div>
 <div id="settings-window" class="popup" style="display: none;">
+ <div class="close" onclick="hide(settingsWindow)">X</div>
  <h1>Settings</h1>
  <label>Current color is <input id="color-input" type="color" value="#0000c0" onchange="changeCurrentColor(this.value)">.</label>
  <button onclick="addColor()">+ add</button>
