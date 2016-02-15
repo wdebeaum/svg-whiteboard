@@ -53,11 +53,12 @@ X cancelled
   > complicated by browser security considerations
   ? ^X ^C ^V keyboard shortcuts
  # collaboration via WebRTC/STUN/TURN/ICE/acronym-of-the-week
-  - unhide collaboration settings by default (once it's more polished)
-  - document it in help text and README
+  # unhide collaboration settings by default (once it's more polished)
+  # document it in help text and README
   # add corresponding section to settings
   ? separate menu item for collaboration settings
-  ? A/V/text chat inset
+  # text chat inset
+   ? A/V chat as well
   - more than two users
    . star topology, hub relays messages
     ? when hub leaves, switch to the next user on the list as the hub
@@ -67,7 +68,8 @@ X cancelled
   - add/remove users on the fly (while already collaborating)
    - send notification to other users about new users joining
   - overall collaboration status indicator
-   - merge start/stop buttons
+   > text chat bar sort of serves this purpose now
+  - merge start/stop collaborating buttons
   - notice when a connection drops, give option to restart it (or just try automatically continuously)
    > in this case, the two sides share most of the same state already, so sending the full document back and forth would be bad
   - show for each user:

@@ -122,16 +122,18 @@ div.popup {
 }
 .close {
   position: fixed;
-  top: 48px;
-  right: 48px;
-  width: 16px;
-  height: 16px;
+  top: 32px;
+  right: 32px;
+  width: 32px;
+  height: 32px;
   background-color: red;
   border: 1px solid black;
+  color: white;
   font-family: Symbola;
-  font-size: 12pt;
+  font-size: 24pt;
   text-align: center;
   vertical-align: middle;
+  cursor: pointer;
 }
 dt {
   font-weight: bold;
@@ -1309,6 +1311,22 @@ function restoreDefaultSettings() {
   fisheyeBorderSquash.value = 3;
   fisheyeBorderThickness.value = 15;
   fisheyeTimeout.value = 250;
+  signalingRelayUri.value = "http://www.uofr.net/~willdb/cgi-bin/relay.pl";
+  iceServers.value =
+    "[\n" +
+    "{\"urls\":\"stun:stun.ekiga.net\"},\n" +
+    "{\"urls\":\"stun:stun.iptel.org\"},\n" +
+    "{\"urls\":\"stun:stun.l.google.com:19302\"},\n" +
+    "{\"urls\":\"stun:stun1.l.google.com:19302\"},\n" +
+    "{\"urls\":\"stun:stun2.l.google.com:19302\"},\n" +
+    "{\"urls\":\"stun:stun3.l.google.com:19302\"},\n" +
+    "{\"urls\":\"stun:stun4.l.google.com:19302\"},\n" +
+    "{\n" +
+    "        \"urls\": \"turn:numb.viagenie.ca\",\n" +
+    "        \"credential\": \"muazkh\",\n" +
+    "        \"username\": \"webrtc@live.com\"\n" +
+    "}\n" +
+    "]";
 }
 
 function updateFisheye() {
@@ -1683,8 +1701,8 @@ defineMethods(PeerConnection, [
 
 function broadcast(msg) {
   for (var remoteUser in peerConnections) {
-    if (peerConnection[remoteUser].isOpen) {
-      peerConnection[remoteUser].send(msg);
+    if (peerConnections[remoteUser].isOpen) {
+      peerConnections[remoteUser].send(msg);
     }
   }
 }
@@ -2195,7 +2213,7 @@ function toggleMenu() {
 window.onload = function() {
   svg = document.getElementsByTagName("svg")[0];
   iconStyle = document.getElementById('icon-style').outerHTML;
-  var idVars = 'docAndSelection doc selection selectRect zoomFactor textToolInput helpWindow settingsWindow colorInput panScrollX panScrollY invertScrollZoom zoomStep enableFisheye fisheyeSettings fisheyeBorderSquash fisheyeBorderThickness fisheyeTimeout fisheyeBorders fisheyeShadow localUserName blankWhiteboardUri remoteUsers signalingRelayUri iceServers enableSignalingFallback sizeToolbar colorToolbar actionsToolbar deleteButton undoButton redoButton menu menuButton collaborationBar svgContainer textChatHistory textChatInput userStatusList'.split(' ')
+  var idVars = 'docAndSelection doc selection selectRect zoomFactor textToolInput helpWindow settingsWindow colorInput panScrollX panScrollY invertScrollZoom zoomStep enableFisheye fisheyeSettings fisheyeBorderSquash fisheyeBorderThickness fisheyeTimeout fisheyeBorders fisheyeShadow localUserName blankWhiteboardUri remoteUsers signalingRelayUri iceServers enableSignalingFallback sizeToolbar colorToolbar actionsToolbar deleteButton undoButton redoButton menu menuButton collaborationBar svgContainer textChatHistory textChatInput userStatusList collaborateWindow'.split(' ')
   for (var i = idVars.length-1; i >= 0; i--) {
     var id = idVars[i].replace(/[A-Z]/g, function(m) { return '-' + m.toLowerCase(); });
     window[idVars[i]] = document.getElementById(id);
@@ -2282,6 +2300,12 @@ window.onload = function() {
     e.stopPropagation();
     toggleMenu();
     show(helpWindow);
+  };
+  var collaborateButton = document.getElementById("collaborate-button");
+  collaborateButton.onclick = function(e) {
+    e.stopPropagation();
+    toggleMenu();
+    show(collaborateWindow);
   };
   var settingsButton = document.getElementById("settings-button");
   settingsButton.onclick = function(e) {
@@ -2417,6 +2441,8 @@ window.onload = function() {
   <text id="text-icon" x="4px" y="1.75ex" font-size="24pt" hotspot="6 6">T</text>
   <text id="new-icon" class="icon" x="6px" y="2ex"><tspan dy="0.5ex" font-size="24pt">🗋</tspan><tspan x="3ex" dy="-0.5ex"> New</tspan></text><!-- EMPTY DOCUMENT -->
   <text id="settings-icon" class="icon" x="6px" y="2ex">⚙<tspan x="3ex"> Settings...</tspan></text>
+  <!-- TODO better collaborate-icon -->
+  <text id="collaborate-icon" class="icon" x="8px" y="3.25ex"><tspan font-size="24pt">*</tspan><tspan x="3ex" dy="-1.25ex"> Collaborate...</tspan></text>
   <text id="help-icon" class="icon" x="8px" y="2.6ex"><tspan font-size="24pt">?</tspan><tspan x="3ex" dy="-0.6ex"> Help...</tspan></text>
   <text id="connect-icon" class="icon" x="4px" y="2ex" font-weight="bold" hotspot="8 24">↗</text>
   <text id="connect-dragging-icon" class="icon" x="4px" y="2ex" font-weight="bold" hotspot="24 8">↗</text>
@@ -2533,7 +2559,11 @@ window.onload = function() {
     <use xlink:href="#icon-frame" class="unclicked frame"></use>
     <use xlink:href="#settings-icon" class="unclicked icon"></use>
    </g>
-   <g id="help-button" transform="translate(48,208)">
+   <g id="collaborate-button" transform="translate(48,208)">
+    <use xlink:href="#icon-frame" class="unclicked frame"></use>
+    <use xlink:href="#collaborate-icon" class="unclicked icon"></use>
+   </g>
+   <g id="help-button" transform="translate(48,240)">
     <use xlink:href="#icon-frame" class="unclicked frame"></use>
     <use xlink:href="#help-icon" class="unclicked icon"></use>
    </g>
@@ -2678,9 +2708,9 @@ window.onload = function() {
  </div>
  <div id="user-status">
   <ul id="user-status-list">
-   <li class="active"><span>user 1</span>
+   <!-- TODO li class="active"><span>user 1</span>
    <li class="inactive"><span>user 2</span>
-   <li class="disconnected"><span>user 3</span>
+   <li class="disconnected"><span>user 3</span -->
   </ul>
  </div>
 </div>
@@ -2738,13 +2768,15 @@ window.onload = function() {
   <dt><svg class="inline icon"><use xlink:href="#save-icon"></use></svg> Save...</dt>
    <dd>Lets you save the whiteboard (both the contents <em>and the application itself</em>) to your computer.</dd>
   <dt><svg class="inline icon"><use xlink:href="#settings-icon"></use></svg> Settings...</dt>
-   <dd>Lets you adjust settings related to the operation of this application, including the color palette, scrolling speed and direction, and the fisheye panning effect.</dd>
+   <dd>Lets you adjust settings related to the operation of this application, including the color palette, scrolling speed and direction, the fisheye panning effect, and WebRTC (used for collaboration).</dd>
+  <dt><svg class="inline icon"><use xlink:href="#collaborate-icon"></use></svg> Collaborate... (WIP)</dt>
+   <dd>Lets you collaborate with another user across the Internet. Enter your name and the remote user's name, and send them the URI that appears below their name. Click the "☑ start collaborating" button, and when they go to the URI in their browser, you will be connected. Whatever you have drawn so far will be sent to them, and whatever either of you draws, the other will see. A text chat will also appear at the bottom of the page. When you are done, you can go back to the Collaborate window and click the "☒ stop collaborating" button.</dd>
   <dt><svg class="inline icon"><use xlink:href="#help-icon"></use></svg> Help...</dt>
-   <dd>Displays this help window. Click the "dismiss" button at the bottom, or the red X at the top right, to get rid of it again.</dd>
+   <dd>Displays this help window.</dd>
  </dl>
+ <p>Most menu items (those ending with "...") open a new window. Those dealing with files use your browser's file chooser. The others open a window in the webpage. Click the red X button at the top right to close this second type of window.</p>
  <h2>Technowledgements</h2>
- <p>SVG Whiteboard was written using <a href="http://www.w3.org/Graphics/SVG/">SVG</a> (natch) embedded in <a href="http://www.w3.org/TR/html5/">HTML5</a>, and makes good use of <a href="https://www.w3.org/Style/CSS/">CSS</a>, <a href="http://www.ecmascript.org/">ECMAScript (aka JavaScript)</a>, <a href="http://tools.ietf.org/html/rfc2397">Data URIs</a>, the <a href="https://www.w3.org/TR/FileAPI/">File API</a>, and <a href="http://www.unicode.org/">Unicode</a>. It also embeds an excerpt of the <a href="http://users.teilar.gr/~g1951d/">Symbola</a> font (as a data URI). The full font has glyphs for practically all the symbols in Unicode, and is "free for any use". I use just the ASCII part part plus some extra Latin and Greek characters, and glyphs for most of the tool and menu icons in this application.</p>
- <button onclick="hide(helpWindow)">dismiss</button>
+ <p>SVG Whiteboard was written using <a href="http://www.w3.org/Graphics/SVG/">SVG</a> (natch) embedded in <a href="http://www.w3.org/TR/html5/">HTML5</a>, and makes good use of <a href="https://www.w3.org/Style/CSS/">CSS</a>, <a href="http://www.ecmascript.org/">ECMAScript (aka JavaScript)</a>, <a href="http://tools.ietf.org/html/rfc2397">Data URIs</a>, the <a href="https://www.w3.org/TR/FileAPI/">File API</a>, <a href="https://webrtc.org/">WebRTC</a>, and <a href="http://www.unicode.org/">Unicode</a>. It also embeds an excerpt of the <a href="http://users.teilar.gr/~g1951d/">Symbola</a> font (as a data URI). The full font has glyphs for practically all the symbols in Unicode, and is "free for any use". I use just the ASCII part part plus some extra Latin and Greek characters, and glyphs for most of the tool and menu icons in this application.</p>
 </div>
 <div id="settings-window" class="popup" style="display: none;">
  <div class="close" onclick="hide(settingsWindow)">X</div>
@@ -2765,23 +2797,8 @@ window.onload = function() {
   <label>Continue fisheye effect for <input id="fisheye-timeout" type="number" min="0" value="250"> milliseconds after panning with scroll wheel/gesture.</label>
    <!-- TODO preview? -->
  </div>
- <div id="collaboration-settings" style="display: none;"><!-- hidden while I work on setting it up -->
  <hr>
- <h2>Collaboration</h2>
- <label>Local user name is <input type="text" id="local-user-name" placeholder="/^[\w-]+$/" onchange="onChangeLocal()"></label>. <button onclick="generateRandomName('local-user-name')">generate random name</button><br>
- <h3>Remote users</h3>
- <label>Blank whiteboard URI:<br>
-   <input type="url" id="blank-whiteboard-uri" value="http://www.uofr.net/~willdb/software/whiteboard.html" onchange="onChangeLocal()"></label>
- <ol id="remote-users">
-  <li>Send the user <label>named <input type="text" id="remote-user-1-name" placeholder="/^[\w-]+$/" onchange="onChangeRemoteUserName(this)"></label> (<button onclick="generateRandomName('remote-user-1-name')">generate random name</button>) <label>this URI:<br>
-    <input type="url" id="remote-user-1-uri" placeholder="Enter both local and remote user names to compute the URI." readonly></label></li>
-  <li><button onclick="addUser()">+ add</button> <button onclick="removeUser()">- remove</button></li>
- </ol>
- <button onclick="startCollaborating()">☑ start collaborating</button>
- <button onclick="stopCollaborating()">☒ stop collaborating</button>
- <h3>WebRTC settings</h3>
- <p>Leave these alone unless you know what you're doing.</p>
- <label>Signaling relay URI:<br>
+ <label>WebRTC signaling relay URI:<br>
   <input type="url" id="signaling-relay-uri" value="http://www.uofr.net/~willdb/cgi-bin/relay.pl">
  </label>
  <label>ICE (STUN/TURN) server list:<br>
@@ -2799,10 +2816,23 @@ window.onload = function() {
         "username": "webrtc@live.com"
 }
 ]</textarea></label>
- <label><input type="checkbox" id="enable-signaling-fallback"> Fall back to using the signaling relay as the main connection if ICE fails.</label>
- </div>
+ <!-- TODO label><input type="checkbox" id="enable-signaling-fallback"> Fall back to using the signaling relay as the main connection if ICE fails.</label -->
  <hr>
- <button onclick="hide(settingsWindow)">dismiss</button>
  <button onclick="restoreDefaultSettings()">restore defaults</button>
+</div>
+<div id="collaborate-window" class="popup" style="display: none;">
+ <div class="close" onclick="hide(collaborateWindow)">X</div>
+ <h2>Collaborate</h2>
+ <label>My name is <input type="text" id="local-user-name" placeholder="/^[\w-]+$/" onchange="onChangeLocal()"></label>. <button onclick="generateRandomName('local-user-name')">generate random name</button><br>
+ <h3>Remote user<!-- TODO s --></h3>
+ <label>Blank whiteboard URI:<br>
+   <input type="url" id="blank-whiteboard-uri" value="http://www.uofr.net/~willdb/software/whiteboard.html" onchange="onChangeLocal()"></label>
+ <ol id="remote-users">
+  <li>Send the user <label>named <input type="text" id="remote-user-1-name" placeholder="/^[\w-]+$/" onchange="onChangeRemoteUserName(this)"></label> (<button onclick="generateRandomName('remote-user-1-name')">generate random name</button>) <label>this URI:<br>
+    <input type="url" id="remote-user-1-uri" placeholder="Enter both local and remote user names to compute the URI." readonly></label></li>
+  <!-- TODO li><button onclick="addUser()">+ add</button> <button onclick="removeUser()">- remove</button></li -->
+ </ol>
+ <button onclick="startCollaborating()">☑ start collaborating</button>
+ <button onclick="stopCollaborating()">☒ stop collaborating</button>
 </div>
 </body></html>

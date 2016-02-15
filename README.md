@@ -36,10 +36,16 @@ Try it online: http://www.uofr.net/~willdb/software/whiteboard.html
  - Standalone HTML file, no external resources, no server required.
  - Save your work to a file on your computer. Saved files contain a copy of the whole application.
  - Integrated help text. Click the menu icon in the top left, and then click on "Help...", to find out how to use all of these features!
+ - Live collaboration across the Internet.
+  - Whiteboard contents are shared while collaborating.
+  - Text chat.
+  - Requires an installation of the `relay.pl` CGI script somewhere public (it uses mine by default, but you can change it).
+  - May also require STUN/TURN servers for NAT traversal (again, there are a few it uses by default, but you can change them).
+  - Work in progress. Currently limited to two parties.
 
 ### Planned
 
- - Live collaboration across the Internet. This part may require a server, but I'll try to make sure it doesn't require **my** server.
+ - Collaboration with more than one other user.
  - See TODO file for full list.
 
 ## Browser support
