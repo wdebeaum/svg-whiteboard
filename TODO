@@ -64,7 +64,7 @@ X cancelled
     ? when hub leaves, switch to the next user on the list as the hub
    X completely connected graph, everyone sends only their own messages, to everyone else
     > not scalable
-   - make add/remove user buttons work
+   # make add/remove user buttons work
   - add/remove users on the fly (while already collaborating)
    - send notification to other users about new users joining
   - overall collaboration status indicator

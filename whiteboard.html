@@ -360,6 +360,7 @@ var actionsToUndo = [];
 var actionsToRedo = [];
 var currentAction = undefined;
 var peerConnections = {};
+var collaborationHub = undefined;
 
 // given an element, ensure it has an ID, and return its ID
 var nextIDNumber = 0;
@@ -1240,6 +1241,9 @@ function onChangeRemoteUserName(input) {
   } else {
     uriInput.value = '';
   }
+  // TODO if we're the hub, and it just changed from an empty/invalid name to a
+  // valid one, open a peer connection to the new user, and notify all other
+  // users with addRemoteUser message
 }
 
 function onChangeLocal() {
@@ -1249,8 +1253,38 @@ function onChangeLocal() {
   }
 }
 
-function addUser() { /* TODO */ }
-function removeUser() { /* TODO */ }
+function addUser(name) {
+  var lastRemoteUserLi = addRemoveUserLi.previousElementSibling;
+  var i = 0;
+  if (lastRemoteUserLi && /^remote-user-(\d+)-li$/.test(lastRemoteUserLi.id)) {
+    i = parseInt(RegExp.lastParen);
+  }
+  i++;
+  var newUserHTML = remoteUsers.firstElementChild.outerHTML.
+    replace(/id="remote-user-1-/g, 'id="remote-user-' + i + '-').
+    replace(/-1-name'\)">/g, '-' + i + "-name')\">");
+  var newLi = document.createElement('li');
+  remoteUsers.insertBefore(newLi, addRemoveUserLi);
+  newLi.outerHTML = newUserHTML;
+  var newUserNameInput = document.getElementById('remote-user-' + i + '-name');
+  newUserNameInput.value = (name ? name : '');
+  onChangeRemoteUserName(newUserNameInput);
+}
+
+function removeUser() {
+  var lastRemoteUserLi = addRemoveUserLi.previousElementSibling;
+  var i = 0;
+  if (lastRemoteUserLi && /^remote-user-(\d+)-li$/.test(lastRemoteUserLi.id)) {
+    i = parseInt(RegExp.lastParen);
+    var lastRemoteUserName =
+      document.getElementById('remote-user-' + i + '-name').value;
+    if (lastRemoteUserName in peerConnections) {
+      peerConnections[lastRemoteUserName].close();
+      delete peerConnections[lastRemoteUserName];
+    }
+    remoteUsers.removeChild(lastRemoteUserLi);
+  }
+}
 
 function showCollaborationBar() {
   show(collaborationBar);
@@ -1263,13 +1297,33 @@ function hideCollaborationBar() {
   svgContainer.style.setProperty('bottom', 0);
 }
 
-function startCollaborating() {
-  // TODO iterate over multiple remote users
-  var remoteUserName = document.getElementById('remote-user-1-name').value;
-  var pc = new PeerConnection(remoteUserName);
+function openPeerConnection(remoteUser) {
+  var pc = new PeerConnection(remoteUser);
   pc.onopen = onPeerConnectionOpen;
   pc.onmessage = onmessage;
   pc.open();
+}
+
+function startCollaborating(hub) {
+  if (collaborationHub) { // already collaborating
+    return;
+  }
+  if (hub) { // they're the hub
+    collaborationHub = hub;
+    // only connect to them
+    openPeerConnection(collaborationHub);
+  } else { // we're the hub
+    hub = localUserName.value;
+    // connect to all remote users
+    var remoteUserNameInput = undefined;
+    for (var i = 1;
+         (remoteUserNameInput =
+	   document.getElementById('remote-user-' + i + '-name')) &&
+	 remoteUserNameInput.value.length > 0;
+	 i++) {
+      openPeerConnection(remoteUserNameInput.value);
+    }
+  }
   showCollaborationBar();
 }
 
@@ -1278,6 +1332,7 @@ function stopCollaborating() {
     peerConnections[k].close();
   }
   peerConnections = {};
+  collaborationHub = undefined;
   hideCollaborationBar();
 }
 
@@ -1682,6 +1737,22 @@ defineMethods(PeerConnection, [
     this.dataChannel.onmessage = this.onDataChannelMessage.bind(this);
     this.isOpen = true;
     this.onopen();
+    // send the list of users if we're the hub
+    if (collaborationHub == this.localUser) {
+      var remoteUserNameInput;
+      for (var i = 1; // TODO abstract this to forEachRemoteUser(fn)
+           (remoteUserNameInput =
+	     document.getElementById('remote-user-' + i + '-name')) &&
+	   remoteUserNameInput.value.length > 0;
+	   i++) {
+	if (remoteUserNameInput.value != this.remoteUser) {
+	  this.write({
+	    type: 'addRemoteUser',
+	    name: remoteUserNameInput.value
+	  });
+	}
+      }
+    }
   },
 
   function onDataChannelMessage(e) {
@@ -1692,6 +1763,10 @@ defineMethods(PeerConnection, [
       data = JSON.parse(data);
       console.log('parsed as: ' + JSON.stringify(data));
       this.onmessage(data);
+      if (collaborationHub == this.localUser) { // if we're the hub
+	// rebroadcast the message to everyone except the user we got it from
+	broadcast(data, this.remoteUser);
+      }
     } catch (err) {
       this.logError(err);
     }
@@ -1699,9 +1774,9 @@ defineMethods(PeerConnection, [
 
 ]);
 
-function broadcast(msg) {
+function broadcast(msg, exceptUser) {
   for (var remoteUser in peerConnections) {
-    if (peerConnections[remoteUser].isOpen) {
+    if (remoteUser != exceptUser && peerConnections[remoteUser].isOpen) {
       peerConnections[remoteUser].send(msg);
     }
   }
@@ -2184,6 +2259,9 @@ function onmessage(data) {
     case 'chat':
       addToTextChatHistory(data.sender, data.message);
       break;
+    case 'addRemoteUser':
+      addUser(data.name);
+      break;
     default:
       receiveStep(data);
   }
@@ -2213,7 +2291,7 @@ function toggleMenu() {
 window.onload = function() {
   svg = document.getElementsByTagName("svg")[0];
   iconStyle = document.getElementById('icon-style').outerHTML;
-  var idVars = 'docAndSelection doc selection selectRect zoomFactor textToolInput helpWindow settingsWindow colorInput panScrollX panScrollY invertScrollZoom zoomStep enableFisheye fisheyeSettings fisheyeBorderSquash fisheyeBorderThickness fisheyeTimeout fisheyeBorders fisheyeShadow localUserName blankWhiteboardUri remoteUsers signalingRelayUri iceServers enableSignalingFallback sizeToolbar colorToolbar actionsToolbar deleteButton undoButton redoButton menu menuButton collaborationBar svgContainer textChatHistory textChatInput userStatusList collaborateWindow'.split(' ')
+  var idVars = 'docAndSelection doc selection selectRect zoomFactor textToolInput helpWindow settingsWindow colorInput panScrollX panScrollY invertScrollZoom zoomStep enableFisheye fisheyeSettings fisheyeBorderSquash fisheyeBorderThickness fisheyeTimeout fisheyeBorders fisheyeShadow localUserName blankWhiteboardUri remoteUsers addRemoveUserLi signalingRelayUri iceServers enableSignalingFallback sizeToolbar colorToolbar actionsToolbar deleteButton undoButton redoButton menu menuButton collaborationBar svgContainer textChatHistory textChatInput userStatusList collaborateWindow'.split(' ')
   for (var i = idVars.length-1; i >= 0; i--) {
     var id = idVars[i].replace(/[A-Z]/g, function(m) { return '-' + m.toLowerCase(); });
     window[idVars[i]] = document.getElementById(id);
@@ -2396,7 +2474,7 @@ window.onload = function() {
     var userNames = window.location.hash.substr(1).split(/\+/);
     localUserName.value = userNames[0];
     document.getElementById('remote-user-1-name').value = userNames[1];
-    startCollaborating();
+    startCollaborating(userNames[1]);
   }
 }
 </script>
@@ -2828,9 +2906,9 @@ window.onload = function() {
  <label>Blank whiteboard URI:<br>
    <input type="url" id="blank-whiteboard-uri" value="http://www.uofr.net/~willdb/software/whiteboard.html" onchange="onChangeLocal()"></label>
  <ol id="remote-users">
-  <li>Send the user <label>named <input type="text" id="remote-user-1-name" placeholder="/^[\w-]+$/" onchange="onChangeRemoteUserName(this)"></label> (<button onclick="generateRandomName('remote-user-1-name')">generate random name</button>) <label>this URI:<br>
+  <li id="remote-user-1-li">Send the user <label>named <input type="text" id="remote-user-1-name" placeholder="/^[\w-]+$/" onchange="onChangeRemoteUserName(this)"></label> (<button onclick="generateRandomName('remote-user-1-name')">generate random name</button>) <label>this URI:<br>
     <input type="url" id="remote-user-1-uri" placeholder="Enter both local and remote user names to compute the URI." readonly></label></li>
-  <!-- TODO li><button onclick="addUser()">+ add</button> <button onclick="removeUser()">- remove</button></li -->
+  <li id="add-remove-user-li"><button onclick="addUser()">+ add</button> <button onclick="removeUser()">- remove</button></li>
  </ol>
  <button onclick="startCollaborating()">☑ start collaborating</button>
  <button onclick="stopCollaborating()">☒ stop collaborating</button>
