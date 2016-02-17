@@ -1242,7 +1242,7 @@ function onFocusRemoteUserName(input) {
 function onChangeRemoteUserName(input) {
   var id = input.id.replace(/-name$/, '-uri');
   var uriInput = document.getElementById(id);
-  if (isVaildUserName(input.value) && isValidUserName(localUserName.value)) {
+  if (isValidUserName(input.value) && isValidUserName(localUserName.value)) {
     uriInput.value = blankWhiteboardUri.value + '#' + input.value + '+' + localUserName.value;
   } else {
     uriInput.value = '';
