@@ -1538,8 +1538,9 @@ defineMethods(SignalingRelay, [
     this.receiveXHR.onerror = function(e) {
       console.log(e);
     };
-    this.receiveXHR.open('GET', this.url + '?k=' + this.remoteUser + '-' + this.localUser, true);
-    this.receiveXHR.send();
+    this.receiveXHR.open('POST', this.url, true);
+    this.receiveXHR.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    this.receiveXHR.send('k=' + this.remoteUser + '-' + this.localUser);
   },
 
   function sendBufferedMessages() {
@@ -1550,14 +1551,12 @@ defineMethods(SignalingRelay, [
       xhr.onload = this.sendBufferedMessages.bind(this);
       xhr.onerror = function(e) { console.log(e); };
       console.log('sending to ' + this.remoteUser + ' via signaling relay: ' + text);
-      xhr.open(
-	'GET',
-	this.url +
-	  '?k=' + this.localUser + '-' + this.remoteUser +
-	  '&m=' + encodeURIComponent(text),
-	true
+      xhr.open('POST', this.url, true);
+      xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+      xhr.send(
+	'k=' + this.localUser + '-' + this.remoteUser +
+	'&m=' + encodeURIComponent(text)
       );
-      xhr.send();
     }
   },
 

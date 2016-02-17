@@ -27,8 +27,9 @@ eval {
 } || print STDERR "Warning: failed to clean stale fifos: $@";
 
 # get CGI args
-$ENV{REQUEST_METHOD} eq 'GET' or die "must use GET method\n";
-$ENV{QUERY_STRING} =~ /^k=([\w-]+)(\&m=.*)?$/ or die "only parameters must be k and optionally m, in that order, and k's value must be alphanumeric, underscores, and dashes\n";
+$ENV{REQUEST_METHOD} eq 'POST' or die "must use POST method\n";
+my $query_string = <>;
+$query_string =~ /^k=([\w-]+)(\&m=.*)?$/ or die "only parameters must be k and optionally m, in that order, and k's value must be alphanumeric, underscores, and dashes\n";
 my ($k, $m) = ($1, $2);
 
 # make the fifo unless it exists already
