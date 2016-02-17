@@ -1222,28 +1222,50 @@ function generateRandomName(inputID) {
     name += str[Math.floor(Math.random() * str.length)];
   }
   if (inputID) {
-    var input = document.getElementById(inputID)
-    input.value = name;
+    var input = document.getElementById(inputID);
     if (/^remote-user-\d+-name$/.test(input.id)) {
+      onFocusRemoteUserName(input);
+      input.value = name;
       onChangeRemoteUserName(input);
     } else { // local user name
+      input.value = name;
       onChangeLocal();
     }
   }
   return name;
 }
 
+function onFocusRemoteUserName(input) {
+  input.oldValue = input.value;
+}
+
 function onChangeRemoteUserName(input) {
   var id = input.id.replace(/-name$/, '-uri');
   var uriInput = document.getElementById(id);
-  if (/^[\w-]+/.test(input.value) && /^[\w-]+/.test(localUserName.value)) {
+  if (isVaildUserName(input.value) && isValidUserName(localUserName.value)) {
     uriInput.value = blankWhiteboardUri.value + '#' + input.value + '+' + localUserName.value;
   } else {
     uriInput.value = '';
   }
+  if (collaborationHub == localUserName.value) {
+    if (isValidUserName(input.value) && !isValidUserName(input.oldValue)) {
+      // value became valid
+      // TODO
+      // - open new peer connection
+      // - notify all other users with addRemoteUser message
+    } else if (isValidUserName(input.oldValue) &&
+	       !isValidUserName(input.value) {
+      // value became invalid
+      // TODO
+      // - close existing peer connection
+      // - notify all other users with removeRemoteUser message (see also TODO in removeUser)
+    }
+  }
   // TODO if we're the hub, and it just changed from an empty/invalid name to a
   // valid one, open a peer connection to the new user, and notify all other
   // users with addRemoteUser message
+  // also vice versa: valid to invalid
+  input.oldValue = input.value;
 }
 
 function onChangeLocal() {
@@ -1267,11 +1289,13 @@ function addUser(name) {
   remoteUsers.insertBefore(newLi, addRemoveUserLi);
   newLi.outerHTML = newUserHTML;
   var newUserNameInput = document.getElementById('remote-user-' + i + '-name');
+  newUserNameInput.oldValue = '';
   newUserNameInput.value = (name ? name : '');
   onChangeRemoteUserName(newUserNameInput);
 }
 
-function removeUser() {
+function removeUser(name) {
+  // TODO if name specified, remove the named user instead of the last one
   var lastRemoteUserLi = addRemoveUserLi.previousElementSibling;
   var i = 0;
   if (lastRemoteUserLi && /^remote-user-(\d+)-li$/.test(lastRemoteUserLi.id)) {
@@ -1502,8 +1526,12 @@ function importFile(file, pageCoords) {
 
 //// SignalingRelay ////
 
+function isValidUserName(n) {
+  return /^[\w-]+$/.test(n);
+}
+
 function ensureValidUserName(n) {
-  if (!/^[\w-]+$/.test(n)) {
+  if (!isValidUserName(n)) {
     var msg = "Invalid user name: " + n + "\nUser names should contain only letters, numbers, hyphens, and underscores.";
     alert(msg);
     throw new Error(msg);
@@ -2261,6 +2289,9 @@ function onmessage(data) {
     case 'addRemoteUser':
       addUser(data.name);
       break;
+    case 'removeRemoteUser':
+      removeUser(data.name);
+      break;
     default:
       receiveStep(data);
   }
@@ -2901,11 +2932,11 @@ window.onload = function() {
  <div class="close" onclick="hide(collaborateWindow)">X</div>
  <h2>Collaborate</h2>
  <label>My name is <input type="text" id="local-user-name" placeholder="/^[\w-]+$/" onchange="onChangeLocal()"></label>. <button onclick="generateRandomName('local-user-name')">generate random name</button><br>
- <h3>Remote user<!-- TODO s --></h3>
+ <h3>Remote users</h3>
  <label>Blank whiteboard URI:<br>
    <input type="url" id="blank-whiteboard-uri" value="http://www.uofr.net/~willdb/software/whiteboard.html" onchange="onChangeLocal()"></label>
  <ol id="remote-users">
-  <li id="remote-user-1-li">Send the user <label>named <input type="text" id="remote-user-1-name" placeholder="/^[\w-]+$/" onchange="onChangeRemoteUserName(this)"></label> (<button onclick="generateRandomName('remote-user-1-name')">generate random name</button>) <label>this URI:<br>
+  <li id="remote-user-1-li">Send the user <label>named <input type="text" id="remote-user-1-name" placeholder="/^[\w-]+$/" onfocus="onFocusRemoteUserName(this)" onchange="onChangeRemoteUserName(this)"></label> (<button onclick="generateRandomName('remote-user-1-name')">generate random name</button>) <label>this URI:<br>
     <input type="url" id="remote-user-1-uri" placeholder="Enter both local and remote user names to compute the URI." readonly></label></li>
   <li id="add-remove-user-li"><button onclick="addUser()">+ add</button> <button onclick="removeUser()">- remove</button></li>
  </ol>
