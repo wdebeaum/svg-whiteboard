@@ -23,6 +23,7 @@ X cancelled
  - see FIXME comments on moveObjects, maybe related to above two
  ? trashcan vs. eraser
  - small text is smaller on Chrome than on Firefox?!
+ - make relay.pl use POST instead of GET... think I might be losing messages due to browsers trying to be too smart about same-origin testing
 
 = enhancements of existing features
  X make new open a new tab/window with a blank document (using data URI) instead of clearing the current document
