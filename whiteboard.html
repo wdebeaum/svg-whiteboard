@@ -1251,7 +1251,7 @@ function onChangeRemoteUserName(input) {
     if (isValidUserName(input.value) && !isValidUserName(input.oldValue)) {
       // value became valid
       // open new peer connection
-      new PeerConnection(input.value);
+      openPeerConnection(input.value);
       // notify all other users with addRemoteUser message
       broadcast({ type: 'addRemoteUser', name: input.value }, input.value);
     } else if (isValidUserName(input.oldValue) &&
