@@ -1363,7 +1363,7 @@ function startCollaborating(hub) {
     // only connect to them
     openPeerConnection(collaborationHub);
   } else { // we're the hub
-    hub = localUserName.value;
+    collaborationHub = localUserName.value;
     // connect to all remote users
     var remoteUserNameInput = undefined;
     for (var i = 1;

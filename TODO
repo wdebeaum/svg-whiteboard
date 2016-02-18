@@ -61,8 +61,8 @@ X cancelled
   ? separate menu item for collaboration settings
   # text chat inset
    ? A/V chat as well
-  - more than two users
-   . star topology, hub relays messages
+  # more than two users
+   # star topology, hub relays messages
     ? when hub leaves, switch to the next user on the list as the hub
    X completely connected graph, everyone sends only their own messages, to everyone else
     > not scalable
