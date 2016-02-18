@@ -1250,21 +1250,22 @@ function onChangeRemoteUserName(input) {
   if (collaborationHub == localUserName.value) {
     if (isValidUserName(input.value) && !isValidUserName(input.oldValue)) {
       // value became valid
-      // TODO
-      // - open new peer connection
-      // - notify all other users with addRemoteUser message
+      // open new peer connection
+      new PeerConnection(input.value);
+      // notify all other users with addRemoteUser message
+      broadcast({ type: 'addRemoteUser', name: input.value }, input.value);
     } else if (isValidUserName(input.oldValue) &&
 	       !isValidUserName(input.value)) {
       // value became invalid
-      // TODO
-      // - close existing peer connection
-      // - notify all other users with removeRemoteUser message (see also TODO in removeUser)
-    }
+      // close existing peer connection
+      if (input.oldValue in peerConnections) {
+	peerConnections[input.oldValue].close();
+	delete peerConnections[input.oldValue];
+      }
+      // notify all other users with removeRemoteUser message
+      broadcast({ type: 'removeRemoteUser', name: input.oldValue });
+    } // TODO both old and new value valid: broadcast name change? really should only be able to change one's own name...
   }
-  // TODO if we're the hub, and it just changed from an empty/invalid name to a
-  // valid one, open a peer connection to the new user, and notify all other
-  // users with addRemoteUser message
-  // also vice versa: valid to invalid
   input.oldValue = input.value;
 }
 
@@ -1295,18 +1296,43 @@ function addUser(name) {
 }
 
 function removeUser(name) {
-  // TODO if name specified, remove the named user instead of the last one
-  var lastRemoteUserLi = addRemoveUserLi.previousElementSibling;
   var i = 0;
-  if (lastRemoteUserLi && /^remote-user-(\d+)-li$/.test(lastRemoteUserLi.id)) {
-    i = parseInt(RegExp.lastParen);
-    var lastRemoteUserName =
-      document.getElementById('remote-user-' + i + '-name').value;
-    if (lastRemoteUserName in peerConnections) {
-      peerConnections[lastRemoteUserName].close();
-      delete peerConnections[lastRemoteUserName];
+  var remoteUserLi = undefined;
+  var remoteUserNameInput = undefined;
+  if (name) {
+    // if a name was given, find the input with that name as the value
+    for (i = 1;
+         (remoteUserNameInput = document.getElementById('remote-user-' + i + '-name')) &&
+	   remoteUserNameInput.value != name;
+	 i++) {
+      // do nothing
     }
-    remoteUsers.removeChild(lastRemoteUserLi);
+    if (remoteUserNameInput) { // if found, get the corresponding li
+      remoteUserLi = document.getElementById('remote-user-' + i + '-li');
+    }
+    // FIXME? if we remove a user from the middle, the indexes in the IDs and on the list item markers will become out of sync. do I care?
+  } else {
+    // if no name was given, get the last user name and li
+    remoteUserLi = addRemoveUserLi.previousElementSibling;
+    if (remoteUserLi && /^remote-user-(\d+)-li$/.test(remoteUserLi.id)) {
+      i = parseInt(RegExp.lastParen);
+      remoteUserNameInput =
+	document.getElementById('remote-user-' + i + '-name');
+      name = remoteUserNameInput.value;
+    }
+  }
+  if (remoteUserLi) { // found a user to remove
+    // shut down the user's connection if it exists
+    if (name in peerConnections) {
+      peerConnections[name].close();
+      delete peerConnections[name];
+    }
+    // remove the li
+    remoteUsers.removeChild(remoteUserLi);
+    // if we're the hub, tell others to remove the user as well
+    if (collaborationHub == localUserName.value) {
+      broadcast({ type: 'removeRemoteUser', name: name});
+    }
   }
 }
 

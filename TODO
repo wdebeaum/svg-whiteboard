@@ -67,8 +67,8 @@ X cancelled
    X completely connected graph, everyone sends only their own messages, to everyone else
     > not scalable
    # make add/remove user buttons work
-  - add/remove users on the fly (while already collaborating)
-   - send notification to other users about new users joining
+  # add/remove users on the fly (while already collaborating)
+   # send notification to other users about new users joining
   - overall collaboration status indicator
    > text chat bar sort of serves this purpose now
   - merge start/stop collaborating buttons
