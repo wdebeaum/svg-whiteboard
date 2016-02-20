@@ -205,7 +205,7 @@ input[type="url"] {
 #user-status-list {
   margin-top: 0;
   margin-bottom: 0;
-  padding-left: 1em;
+  padding-left: 1.5em;
 }
 #user-status-list li span {
   color: black;
@@ -215,9 +215,11 @@ input[type="url"] {
 }
 #user-status-list li.inactive {
   color: orange;
+  list-style-type: square;
 }
 #user-status-list li.disconnected {
   color: #888;
+  list-style-type: circle;
 }
 </style>
 <script type="text/javascript">
@@ -1251,9 +1253,15 @@ function onChangeRemoteUserName(input) {
     if (isValidUserName(input.value) && !isValidUserName(input.oldValue)) {
       // value became valid
       // open new peer connection
-      openPeerConnection(input.value);
+      if (!/^remote-user-(\d+)-name$/.test(input.id)) { throw new Error('WTF') }
+      var i = parseInt(RegExp.lastParen);
+      openPeerConnection(i, input.value);
       // notify all other users with addRemoteUser message
-      broadcast({ type: 'addRemoteUser', name: input.value }, input.value);
+      broadcast({
+	type: 'addRemoteUser',
+	name: input.value,
+	status: getUserStatus(input.value)
+      }, input.value);
     } else if (isValidUserName(input.oldValue) &&
 	       !isValidUserName(input.value)) {
       // value became invalid
@@ -1276,13 +1284,25 @@ function onChangeLocal() {
   }
 }
 
-function addUser(name) {
+function addUserStatus(i, name, status) {
+  var newLi = document.createElement('li');
+  newLi.id = 'remote-user-' + i + '-status';
+  newLi.className = status;
+  var span = document.createElement('span');
+  span.appendChild(document.createTextNode(name));
+  newLi.appendChild(span);
+  userStatusList.appendChild(newLi);
+}
+
+function addUser(name, status) {
+  // get next remote user index
   var lastRemoteUserLi = addRemoveUserLi.previousElementSibling;
   var i = 0;
   if (lastRemoteUserLi && /^remote-user-(\d+)-li$/.test(lastRemoteUserLi.id)) {
     i = parseInt(RegExp.lastParen);
   }
   i++;
+  // add to user name input list
   var newUserHTML = remoteUsers.firstElementChild.outerHTML.
     replace(/id="remote-user-1-/g, 'id="remote-user-' + i + '-').
     replace(/-1-name'\)">/g, '-' + i + "-name')\">");
@@ -1292,22 +1312,46 @@ function addUser(name) {
   var newUserNameInput = document.getElementById('remote-user-' + i + '-name');
   newUserNameInput.oldValue = '';
   newUserNameInput.value = (name ? name : '');
+  if (name) {
+    addUserStatus(i, name, (status || 'disconnected'));
+  }
   onChangeRemoteUserName(newUserNameInput);
+}
+
+function forEachRemoteUser(fn, includeEmpty) {
+  var i;
+  var remoteUserNameInput;
+  for (i = 1;
+       (remoteUserNameInput =
+	 document.getElementById('remote-user-' + i + '-name')) &&
+       (includeEmpty || remoteUserNameInput.value.length > 0);
+       i++) {
+    if (!fn(i, remoteUserNameInput.value, remoteUserNameInput)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function indexOfRemoteUser(name) {
+  var index = -1;
+  forEachRemoteUser(function(i, nm) {
+    if (nm == name) {
+      index = i;
+      return false; // break
+    }
+    return true;
+  });
+  return index;
 }
 
 function removeUser(name) {
   var i = 0;
   var remoteUserLi = undefined;
-  var remoteUserNameInput = undefined;
   if (name) {
     // if a name was given, find the input with that name as the value
-    for (i = 1;
-         (remoteUserNameInput = document.getElementById('remote-user-' + i + '-name')) &&
-	   remoteUserNameInput.value != name;
-	 i++) {
-      // do nothing
-    }
-    if (remoteUserNameInput) { // if found, get the corresponding li
+    i = indexOfRemoteUser(name);
+    if (i > -1) { // if found, get the corresponding li
       remoteUserLi = document.getElementById('remote-user-' + i + '-li');
     }
     // FIXME? if we remove a user from the middle, the indexes in the IDs and on the list item markers will become out of sync. do I care?
@@ -1316,7 +1360,7 @@ function removeUser(name) {
     remoteUserLi = addRemoveUserLi.previousElementSibling;
     if (remoteUserLi && /^remote-user-(\d+)-li$/.test(remoteUserLi.id)) {
       i = parseInt(RegExp.lastParen);
-      remoteUserNameInput =
+      var remoteUserNameInput =
 	document.getElementById('remote-user-' + i + '-name');
       name = remoteUserNameInput.value;
     }
@@ -1329,11 +1373,36 @@ function removeUser(name) {
     }
     // remove the li
     remoteUsers.removeChild(remoteUserLi);
+    // remove the user status li too
+    var statusLi = document.getElementById('remote-user-' + i + '-status');
+    userStatusList.removeChild(statusLi);
     // if we're the hub, tell others to remove the user as well
     if (collaborationHub == localUserName.value) {
       broadcast({ type: 'removeRemoteUser', name: name});
     }
   }
+}
+
+function setUserStatus(name, status) {
+  var i = indexOfRemoteUser(name);
+  var statusLi = document.getElementById('remote-user-' + i + '-status');
+  statusLi.className = status;
+  // if we're the hub, broadcast the status change to everyone else
+  if (collaborationHub == localUserName.value) {
+    broadcast({
+      type: 'userStatus',
+      name: name,
+      status: status
+    }, name);
+  }
+}
+
+function getUserStatus(name) {
+  var i = indexOfRemoteUser(name);
+  if (i < 0) { return 'disconnected'; }
+  var statusLi = document.getElementById('remote-user-' + i + '-status');
+  if (!statusLi) { return 'disconnected'; }
+  return statusLi.className;
 }
 
 function showCollaborationBar() {
@@ -1347,11 +1416,13 @@ function hideCollaborationBar() {
   svgContainer.style.setProperty('bottom', 0);
 }
 
-function openPeerConnection(remoteUser) {
+function openPeerConnection(index, remoteUser) {
   var pc = new PeerConnection(remoteUser);
   pc.onopen = onPeerConnectionOpen;
   pc.onmessage = onmessage;
+  pc.onclose = onPeerConnectionClose;
   pc.open();
+  addUserStatus(index, remoteUser, 'disconnected');
 }
 
 function startCollaborating(hub) {
@@ -1361,18 +1432,15 @@ function startCollaborating(hub) {
   if (hub) { // they're the hub
     collaborationHub = hub;
     // only connect to them
-    openPeerConnection(collaborationHub);
+    openPeerConnection(1 /* assumed */, collaborationHub);
   } else { // we're the hub
     collaborationHub = localUserName.value;
     // connect to all remote users
     var remoteUserNameInput = undefined;
-    for (var i = 1;
-         (remoteUserNameInput =
-	   document.getElementById('remote-user-' + i + '-name')) &&
-	 remoteUserNameInput.value.length > 0;
-	 i++) {
-      openPeerConnection(remoteUserNameInput.value);
-    }
+    forEachRemoteUser(function(i, name) {
+      openPeerConnection(i, name);
+      return true;
+    });
   }
   showCollaborationBar();
 }
@@ -1788,24 +1856,9 @@ defineMethods(PeerConnection, [
     this.relay.close();
     delete this.relay;
     this.dataChannel.onmessage = this.onDataChannelMessage.bind(this);
+    this.dataChannel.onclose = this.onclose.bind(this);
     this.isOpen = true;
     this.onopen();
-    // send the list of users if we're the hub
-    if (collaborationHub == this.localUser) {
-      var remoteUserNameInput;
-      for (var i = 1; // TODO abstract this to forEachRemoteUser(fn)
-           (remoteUserNameInput =
-	     document.getElementById('remote-user-' + i + '-name')) &&
-	   remoteUserNameInput.value.length > 0;
-	   i++) {
-	if (remoteUserNameInput.value != this.remoteUser) {
-	  this.write({
-	    type: 'addRemoteUser',
-	    name: remoteUserNameInput.value
-	  });
-	}
-      }
-    }
   },
 
   function onDataChannelMessage(e) {
@@ -2285,7 +2338,33 @@ function onPeerConnectionOpen() {
   }
   // then send doc's innerHTML
   this.send({ type: 'addObjects', outerHTML: doc.innerHTML });
-};
+  // send list of other users if we're the hub
+  if (collaborationHub == this.localUser) {
+    var that = this;
+    forEachRemoteUser(function(i, name) {
+      if (name != that.remoteUser) {
+	that.send({
+	  type: 'addRemoteUser',
+	  name: name,
+	  status: getUserStatus(name)
+	});
+      }
+      return true;
+    });
+  }
+  setUserStatus(this.remoteUser, 'active');
+}
+
+function onPeerConnectionClose() {
+  if (collaborationHub == this.localUser) {
+    setUserStatus(this.remoteUser, 'disconnected');
+  } else { // we're not the hub, we must've disconnected from the hub
+    forEachRemoteUser(function(i, name) {
+      setUserStatus(name, 'disconnected');
+      return true;
+    });
+  }
+}
 
 function addToTextChatHistory(sender, message) {
   var time = (new Date()).toLocaleTimeString(undefined,
@@ -2313,10 +2392,13 @@ function onmessage(data) {
       addToTextChatHistory(data.sender, data.message);
       break;
     case 'addRemoteUser':
-      addUser(data.name);
+      addUser(data.name, data.status);
       break;
     case 'removeRemoteUser':
       removeUser(data.name);
+      break;
+    case 'userStatus':
+      setUserStatus(data.name, data.status);
       break;
     default:
       receiveStep(data);
@@ -2841,9 +2923,6 @@ window.onload = function() {
  </div>
  <div id="user-status">
   <ul id="user-status-list">
-   <!-- TODO li class="active"><span>user 1</span>
-   <li class="inactive"><span>user 2</span>
-   <li class="disconnected"><span>user 3</span -->
   </ul>
  </div>
 </div>
