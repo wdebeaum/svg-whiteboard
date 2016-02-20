@@ -4,6 +4,7 @@
 
 use strict;
 use POSIX qw(mkfifo);
+use Fcntl qw(:flock);
 
 # directory to make fifo files in
 my $fifo_dir = '../fifos';
@@ -44,7 +45,9 @@ if ($m) { # send message m
   $m =~ s/[\r\n]/ /g; # one line per message
   # send the decoded message
   open FIFO, ">$k" or die "Can't open >$k: $!";
+  flock(FIFO, LOCK_EX);
   print FIFO "$m\n";
+  flock(FIFO, LOCK_UN);
   close FIFO;
 } else { # receive one message
   open FIFO, "<$k" or die "Can't open <$k: $!";
