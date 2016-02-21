@@ -1667,10 +1667,15 @@ defineMethods(SignalingRelay, [
 
   function sendBufferedMessages() {
     if (this.writeBuffer.length > 0) {
-      var text = this.writeBuffer.shift();
+      var text = this.writeBuffer[0];
       var xhr = new XMLHttpRequest();
-      // once we've sent this message, recurse to send the rest of them
-      xhr.onload = this.sendBufferedMessages.bind(this);
+      // once we've sent this message, remove it from the buffer, and recurse
+      // to send the rest of them
+      var that = this;
+      xhr.onload = function() {
+	that.writeBuffer.shift();
+        that.sendBufferedMessages();
+      };
       xhr.onerror = function(e) { console.log(e); };
       console.log('sending to ' + this.remoteUser + ' via signaling relay: ' + text);
       xhr.open('POST', this.url, true);
