@@ -1861,7 +1861,11 @@ defineMethods(PeerConnection, [
     this.relay.close();
     delete this.relay;
     this.dataChannel.onmessage = this.onDataChannelMessage.bind(this);
-    this.dataChannel.onclose = this.onclose.bind(this);
+    var that = this;
+    this.dataChannel.onclose = function() {
+      that.isOpen = false;
+      that.onclose();
+    };
     this.isOpen = true;
     this.onopen();
   },
@@ -2357,7 +2361,20 @@ function onPeerConnectionOpen() {
       return true;
     });
   }
-  setUserStatus(this.remoteUser, 'active');
+  setIdleTimeout(this);
+}
+
+function setIdleTimeout(pc) {
+  setUserStatus(pc.remoteUser, 'active');
+  if (pc.idleTimeout) {
+    clearTimeout(pc.idleTimeout);
+  }
+  pc.idleTimeout = setTimeout(onPeerConnectionIdle.bind(pc), 60000); // 1m
+}
+
+function onPeerConnectionIdle() {
+  setUserStatus(this.remoteUser, 'inactive');
+  this.idleTimeout = undefined;
 }
 
 function onPeerConnectionClose() {
@@ -2368,6 +2385,9 @@ function onPeerConnectionClose() {
       setUserStatus(name, 'disconnected');
       return true;
     });
+  }
+  if (this.idleTimeout) {
+    clearTimeout(this.idleTimeout);
   }
 }
 
@@ -2391,6 +2411,7 @@ function addToTextChatHistory(sender, message) {
 }
 
 function onmessage(data) {
+  setIdleTimeout(this);
   console.log('data.type = ' + data.type);
   switch (data.type) {
     case 'chat':
@@ -3027,12 +3048,7 @@ window.onload = function() {
 {"urls":"stun:stun1.l.google.com:19302"},
 {"urls":"stun:stun2.l.google.com:19302"},
 {"urls":"stun:stun3.l.google.com:19302"},
-{"urls":"stun:stun4.l.google.com:19302"},
-{
-        "urls": "turn:numb.viagenie.ca",
-        "credential": "muazkh",
-        "username": "webrtc@live.com"
-}
+{"urls":"stun:stun4.l.google.com:19302"}
 ]</textarea></label>
  <!-- TODO label><input type="checkbox" id="enable-signaling-fallback"> Fall back to using the signaling relay as the main connection if ICE fails.</label -->
  <hr>

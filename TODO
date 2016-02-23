@@ -76,7 +76,7 @@ X cancelled
    > in this case, the two sides share most of the same state already, so sending the full document back and forth would be bad
   - show for each user:
    - their currently selected color/size/tool
-   - connection status (disconnected/connecting/connected and active/connected but idle)
+   # connection status (disconnected/connecting/connected and active/connected but idle)
    ? personal icon or generic silhouette fallback
   - implement signaling relay fallback option
   ? what to do when two users start collaborating, both with nonempty documents?
