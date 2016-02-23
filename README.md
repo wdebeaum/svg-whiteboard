@@ -36,16 +36,14 @@ Try it online: http://www.uofr.net/~willdb/software/whiteboard.html
  - Standalone HTML file, no external resources, no server required.
  - Save your work to a file on your computer. Saved files contain a copy of the whole application.
  - Integrated help text. Click the menu icon in the top left, and then click on "Help...", to find out how to use all of these features!
- - Live collaboration across the Internet.
+ - Live collaboration across the Internet. (Work in progress)
   - Whiteboard contents are shared while collaborating.
   - Text chat.
   - Requires an installation of the `relay.pl` CGI script somewhere public (it uses mine by default, but you can change it).
   - May also require STUN/TURN servers for NAT traversal (again, there are a few it uses by default, but you can change them).
-  - Work in progress. Currently limited to two parties.
 
 ### Planned
 
- - Collaboration with more than one other user.
  - See TODO file for full list.
 
 ## Browser support
@@ -54,7 +52,7 @@ I test on the Firefox and Chrome browsers regularly. Less modern browsers like I
 
 ## SVG Whiteboard is not...
 
- - ...big. It's a little over 100KB, which is nothing these days. Google's homepage is about nine times bigger.
+ - ...big. It's a little over 140KB, which is nothing these days. Google's homepage is about six times bigger.
  - ...expensive. It's free! Nothing to purchase, no premium subscription, no ads, just free. Because I love you and I want you to be happy.
  - ...a bitmap editor like MS Paint, Photoshop, or The GIMP. Too pixelly.
  - ...a full SVG editor like Inkscape. Too complicated.

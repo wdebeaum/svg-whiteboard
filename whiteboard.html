@@ -202,24 +202,28 @@ input[type="url"] {
   bottom: 0;
   left: 80%;
 }
-#user-status-list {
+.user-status-list {
   margin-top: 0;
   margin-bottom: 0;
   padding-left: 1.5em;
 }
-#user-status-list li span {
+.user-status-list li span {
   color: black;
 }
-#user-status-list li.active {
+.user-status-list li.active {
   color: green;
 }
-#user-status-list li.inactive {
+.user-status-list li.inactive {
   color: orange;
   list-style-type: square;
 }
-#user-status-list li.disconnected {
+.user-status-list li.disconnected {
   color: #888;
   list-style-type: circle;
+}
+.user-status-list.demo {
+  float: right;
+  border: 1px solid black;
 }
 </style>
 <script type="text/javascript">
@@ -2948,7 +2952,7 @@ window.onload = function() {
   <input type="text" id="text-chat-input">
  </div>
  <div id="user-status">
-  <ul id="user-status-list">
+  <ul id="user-status-list" class="user-status-list">
   </ul>
  </div>
 </div>
@@ -3009,7 +3013,7 @@ window.onload = function() {
   <dt><svg class="inline icon"><use xlink:href="#settings-icon"></use></svg> Settings...</dt>
    <dd>Lets you adjust settings related to the operation of this application, including the color palette, scrolling speed and direction, the fisheye panning effect, and WebRTC (used for collaboration).</dd>
   <dt><svg class="inline icon"><use xlink:href="#collaborate-icon"></use></svg> Collaborate... (WIP)</dt>
-   <dd>Lets you collaborate with another user across the Internet. Enter your name and the remote user's name, and send them the URI that appears below their name. Click the "☑ start collaborating" button, and when they go to the URI in their browser, you will be connected. Whatever you have drawn so far will be sent to them, and whatever either of you draws, the other will see. A text chat will also appear at the bottom of the page. When you are done, you can go back to the Collaborate window and click the "☒ stop collaborating" button.</dd>
+   <dd>Lets you collaborate with other users across the Internet. Enter your name and the remote users' names. Use the "+ add" button to add space for another user, and "- remove" to remove the last one. Send each user the URI that appears below their name. Click the "☑ start collaborating" button, and when they go to the URI you sent them in their browser, you will be connected. Whatever you have drawn so far will be sent to them, and whatever either of you draws, the other will see. A text chat will also appear at the bottom of the page. <ul class="user-status-list demo"><li class="active"><span>active</span></li><li class="inactive"><span>inactive</span></li><li class="disconnected"><span>disconnected</span></li></ul> To the right of that there is a list of users indicating each one's connection status (see the key to the right). When you are done, you can go back to the Collaborate window and click the "☒ stop collaborating" button.</dd>
   <dt><svg class="inline icon"><use xlink:href="#help-icon"></use></svg> Help...</dt>
    <dd>Displays this help window.</dd>
  </dl>
