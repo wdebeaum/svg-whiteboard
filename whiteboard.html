@@ -1488,7 +1488,7 @@ function restoreDefaultSettings() {
   fisheyeBorderSquash.value = 3;
   fisheyeBorderThickness.value = 15;
   fisheyeTimeout.value = 250;
-  signalingRelayUri.value = "http://www.uofr.net/~willdb/cgi-bin/relay.pl";
+  signalingRelayUri.value = "https://ssl.uofr.net/~willdb/cgi-bin/relay.pl";
   iceServers.value =
     "[\n" +
     "{\"urls\":\"stun:stun.ekiga.net\"},\n" +
@@ -3042,7 +3042,7 @@ window.onload = function() {
  </div>
  <hr>
  <label>WebRTC signaling relay URI:<br>
-  <input type="url" id="signaling-relay-uri" value="http://www.uofr.net/~willdb/cgi-bin/relay.pl">
+  <input type="url" id="signaling-relay-uri" value="https://ssl.uofr.net/~willdb/cgi-bin/relay.pl">
  </label>
  <label>ICE (STUN/TURN) server list:<br>
  <textarea id="ice-servers" placeholder="Enter the JSON array to pass in the iceServers argument to RTCPeerConnection.">[
