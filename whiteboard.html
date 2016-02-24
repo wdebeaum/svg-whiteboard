@@ -1504,6 +1504,7 @@ function restoreDefaultSettings() {
     "        \"username\": \"webrtc@live.com\"\n" +
     "}\n" +
     "]";
+  enableSignalingFallback.checked = false;
 }
 
 function updateFisheye() {
@@ -1721,6 +1722,7 @@ function PeerConnection(remoteUser) {
     (this.remoteUser.localeCompare(this.localUser, 'en') > 0);
   this.iceServers = JSON.parse(iceServers.value);
   this.isOpen = false;
+  this.fellBack = false;
   peerConnections[remoteUser] = this;
 }
 
@@ -1734,9 +1736,13 @@ defineMethods(PeerConnection, [
   },
 
   function send(msg) {
-    msg = JSON.stringify(msg);
-    console.log('sending to ' + this.remoteUser + ' via data channel: ' + msg);
-    this.dataChannel.send(msg);
+    if (this.fellBack) {
+      this.relay.write(msg);
+    } else {
+      msg = JSON.stringify(msg);
+      console.log('sending to ' + this.remoteUser + ' via data channel: ' + msg);
+      this.dataChannel.send(msg);
+    }
   },
 
   function close() {
@@ -1761,7 +1767,13 @@ defineMethods(PeerConnection, [
   },
 
   function onRelayData(data) {
-    if (data.handshake || !this.rtcpc) {
+    if (this.fellBack) {
+      // TODO try-catch?
+      this.onmessage(data);
+      this.rebroadcastIfHub(data);
+    } else if (data.fellBack) {
+      this.fellBack = true;
+    } else if (data.handshake || !this.rtcpc) {
       this.onHandshake();
     } else if (data.desc) {
       var desc = data.desc;
@@ -1812,10 +1824,25 @@ defineMethods(PeerConnection, [
     this.rtcpc.onicecandidate = this.onicecandidate.bind(this);
     this.rtcpc.onnegotiationneeded = this.onnegotiationneeded.bind(this);
     this.rtcpc.ondatachannel = this.ondatachannel.bind(this);
+    this.rtcpc.onconnectionstatechange =
+      this.oniceconnectionstatechange.bind(this);
     if (this.shouldCreateChannel) {
       this.dataChannel = this.rtcpc.createDataChannel(this.remoteUser);
       this.dataChannel.onopen =
         this.onDataChannelOpen.bind(this);
+    }
+  },
+
+  function oniceconnectionstatechange(e) {
+    if (this.rtcpc.iceConnectionState == 'failure') {
+      this.onFailure();
+    }
+  },
+
+  function onFailure() {
+    if (enableSignalingFallback.checked) {
+      this.fellBack;
+      this.relay.write({ fellBack: true });
     }
   },
 
@@ -1882,12 +1909,16 @@ defineMethods(PeerConnection, [
       data = JSON.parse(data);
       console.log('parsed as: ' + JSON.stringify(data));
       this.onmessage(data);
-      if (collaborationHub == this.localUser) { // if we're the hub
-	// rebroadcast the message to everyone except the user we got it from
-	broadcast(data, this.remoteUser);
-      }
+      this.rebroadcastIfHub(data);
     } catch (err) {
       this.logError(err);
+    }
+  },
+
+  function rebroadcastIfHub(data) {
+    if (collaborationHub == this.localUser) { // if we're the hub
+      // rebroadcast the message to everyone except the user we got it from
+      broadcast(data, this.remoteUser);
     }
   }
 
@@ -3054,7 +3085,7 @@ window.onload = function() {
 {"urls":"stun:stun3.l.google.com:19302"},
 {"urls":"stun:stun4.l.google.com:19302"}
 ]</textarea></label>
- <!-- TODO label><input type="checkbox" id="enable-signaling-fallback"> Fall back to using the signaling relay as the main connection if ICE fails.</label -->
+ <label><input type="checkbox" id="enable-signaling-fallback"> Fall back to using the signaling relay as the main connection if ICE fails.</label>
  <hr>
  <button onclick="restoreDefaultSettings()">restore defaults</button>
 </div>
