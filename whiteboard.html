@@ -1841,7 +1841,7 @@ defineMethods(PeerConnection, [
 
   function onFailure() {
     if (enableSignalingFallback.checked) {
-      this.fellBack;
+      this.fellBack = true;
       this.relay.write({ fellBack: true });
     }
   },
