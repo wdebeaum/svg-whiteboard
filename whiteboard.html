@@ -1643,6 +1643,7 @@ function SignalingRelay(url, localUser, remoteUser) {
   this.localUser = ensureValidUserName(localUser);
   this.remoteUser = ensureValidUserName(remoteUser);
   this.writeBuffer = [];
+  this.isOpen = true;
   this.receive();
 }
 
@@ -1660,7 +1661,9 @@ defineMethods(SignalingRelay, [
       } catch (err) {
 	console.log(err.stack);
       }
-      that.receive();
+      if (that.isOpen) {
+	that.receive();
+      }
     };
     this.receiveXHR.onerror = function(e) {
       console.log(e);
@@ -1703,6 +1706,7 @@ defineMethods(SignalingRelay, [
   },
 
   function close() {
+    this.isOpen = false;
     this.receiveXHR.abort();
   }
 
